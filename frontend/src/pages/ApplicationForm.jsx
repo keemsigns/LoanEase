@@ -125,8 +125,10 @@ const ApplicationForm = () => {
       if (!formData.employment_status) newErrors.employment_status = "Employment status is required";
       if (!formData.loan_amount_requested) {
         newErrors.loan_amount_requested = "Loan amount is required";
-      } else if (parseFloat(formData.loan_amount_requested) <= 0) {
-        newErrors.loan_amount_requested = "Loan amount must be greater than 0";
+      } else if (parseFloat(formData.loan_amount_requested) < 100) {
+        newErrors.loan_amount_requested = "Minimum loan amount is $100";
+      } else if (parseFloat(formData.loan_amount_requested) > 5000) {
+        newErrors.loan_amount_requested = "Maximum loan amount is $5,000";
       }
       if (!formData.ssn_last_four.trim()) {
         newErrors.ssn_last_four = "SSN last 4 digits required";
@@ -569,7 +571,7 @@ const ApplicationForm = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="loan_amount_requested" className="text-sm font-medium text-slate-600">
-                      Loan Amount Requested ($)
+                      Loan Amount Requested ($100 - $5,000)
                     </Label>
                     <Input
                       id="loan_amount_requested"
@@ -577,8 +579,9 @@ const ApplicationForm = () => {
                       data-testid="loan-amount-input"
                       value={formData.loan_amount_requested}
                       onChange={(e) => updateFormData("loan_amount_requested", e.target.value)}
-                      placeholder="25000"
-                      min="0"
+                      placeholder="2500"
+                      min="100"
+                      max="5000"
                       className={`h-14 bg-white border-emerald-900/10 focus:border-emerald-900 focus:ring-1 focus:ring-emerald-900 rounded-lg text-base ${
                         errors.loan_amount_requested ? "border-red-500" : ""
                       }`}
