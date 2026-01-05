@@ -71,6 +71,9 @@ const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [documentRequestMessage, setDocumentRequestMessage] = useState("");
   const [showDocumentRequest, setShowDocumentRequest] = useState(false);
+  const [bankingInfo, setBankingInfo] = useState(null);
+  const [showBankingInfo, setShowBankingInfo] = useState(false);
+  const [loadingBankingInfo, setLoadingBankingInfo] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -155,6 +158,19 @@ const AdminDashboard = () => {
     const link = `${window.location.origin}/accept-loan/${token}`;
     navigator.clipboard.writeText(link);
     toast.success("Approval link copied to clipboard!");
+  };
+
+  const fetchBankingInfo = async (applicationId) => {
+    setLoadingBankingInfo(true);
+    try {
+      const response = await axios.get(`${API}/applications/${applicationId}/banking-info`);
+      setBankingInfo(response.data);
+      setShowBankingInfo(true);
+    } catch (error) {
+      toast.error("Failed to fetch banking information");
+    } finally {
+      setLoadingBankingInfo(false);
+    }
   };
 
   const filteredApplications = applications
@@ -688,6 +704,34 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Banking Info Section */}
+                {selectedApp.banking_info_submitted && (
+                  <div className="bg-lime-50 rounded-xl p-4">
+                    <h3 className="text-sm font-medium text-lime-800 mb-3 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      Payment Information
+                    </h3>
+                    <Button
+                      data-testid="view-banking-info-btn"
+                      onClick={() => fetchBankingInfo(selectedApp.id)}
+                      disabled={loadingBankingInfo}
+                      className="bg-lime-600 hover:bg-lime-700 text-white"
+                    >
+                      {loadingBankingInfo ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Banking Details
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
 
                 {/* Documents Section */}
                 {selectedApp.documents && selectedApp.documents.length > 0 && (
