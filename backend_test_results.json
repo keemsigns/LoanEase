@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-01-05T20:19:53.221034",
-  "total_tests": 6,
-  "passed_tests": 6,
+  "timestamp": "2026-01-05T20:40:41.710618",
+  "total_tests": 14,
+  "passed_tests": 14,
   "success_rate": 100.0,
   "test_results": [
     {
@@ -12,7 +12,7 @@
     {
       "test": "Create Loan Application",
       "success": true,
-      "details": "Status: 200, Application ID: 3249350b..."
+      "details": "Status: 200, Application ID: 76dd54fb..."
     },
     {
       "test": "Get Specific Application",
@@ -22,7 +22,7 @@
     {
       "test": "Get All Applications",
       "success": true,
-      "details": "Status: 200, Found 1 applications"
+      "details": "Status: 200, Found 4 applications"
     },
     {
       "test": "Invalid Application Validation",
@@ -33,6 +33,46 @@
       "test": "Non-existent Application",
       "success": true,
       "details": "Status: 404"
+    },
+    {
+      "test": "Admin Login (Valid Password)",
+      "success": true,
+      "details": "Status: 200, Login successful"
+    },
+    {
+      "test": "Admin Login (Invalid Password)",
+      "success": true,
+      "details": "Status: 401"
+    },
+    {
+      "test": "Update Application Status",
+      "success": true,
+      "details": "Status: 200, Status updated to under_review"
+    },
+    {
+      "test": "Get All Notifications",
+      "success": true,
+      "details": "Status: 200, Found 4 notifications"
+    },
+    {
+      "test": "Get Applicant Notifications",
+      "success": true,
+      "details": "Status: 200, Found 2 notifications for john.doe@example.com"
+    },
+    {
+      "test": "Dashboard Statistics",
+      "success": true,
+      "details": "Status: 200, Stats: 4 total, 3 pending"
+    },
+    {
+      "test": "Mark Notification Read",
+      "success": true,
+      "details": "Status: 200, Notification marked as read"
+    },
+    {
+      "test": "Unread Notification Count",
+      "success": true,
+      "details": "Status: 200, Unread count: 3"
     }
   ]
 }
