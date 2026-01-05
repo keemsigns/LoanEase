@@ -942,6 +942,12 @@ class LoanApplicationAPITester:
         self.test_get_uploaded_document()
         self.test_upload_with_invalid_token()
         
+        # Test new banking info features
+        print("\n💳 Testing Banking Info Features...")
+        self.test_get_banking_info()
+        self.test_get_banking_info_no_submission()
+        self.test_get_banking_info_nonexistent_app()
+        
         # Print summary
         print("-" * 50)
         print(f"📊 Backend Tests Summary:")
