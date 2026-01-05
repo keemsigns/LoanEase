@@ -75,6 +75,10 @@ const AdminDashboard = () => {
   const [bankingInfo, setBankingInfo] = useState(null);
   const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [loadingBankingInfo, setLoadingBankingInfo] = useState(false);
+  const [bankingPassword, setBankingPassword] = useState("");
+  const [showBankingPasswordPrompt, setShowBankingPasswordPrompt] = useState(false);
+  const [pendingBankingAppId, setPendingBankingAppId] = useState(null);
+  const [showFullBankingInfo, setShowFullBankingInfo] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -161,16 +165,39 @@ const AdminDashboard = () => {
     toast.success("Approval link copied to clipboard!");
   };
 
-  const fetchBankingInfo = async (applicationId) => {
+  const fetchBankingInfo = async (applicationId, full = false, password = null) => {
     setLoadingBankingInfo(true);
     try {
-      const response = await axios.get(`${API}/applications/${applicationId}/banking-info`);
+      let url = `${API}/applications/${applicationId}/banking-info`;
+      if (full && password) {
+        url += `?full=true&password=${encodeURIComponent(password)}`;
+      }
+      const response = await axios.get(url);
       setBankingInfo(response.data);
       setShowBankingInfo(true);
+      setShowFullBankingInfo(full);
+      setShowBankingPasswordPrompt(false);
+      setBankingPassword("");
     } catch (error) {
-      toast.error("Failed to fetch banking information");
+      if (error.response?.status === 401) {
+        toast.error("Invalid password");
+      } else {
+        toast.error("Failed to fetch banking information");
+      }
     } finally {
       setLoadingBankingInfo(false);
+    }
+  };
+
+  const handleViewBankingClick = (applicationId) => {
+    setPendingBankingAppId(applicationId);
+    setShowBankingPasswordPrompt(true);
+  };
+
+  const handleBankingPasswordSubmit = (e) => {
+    e.preventDefault();
+    if (pendingBankingAppId && bankingPassword) {
+      fetchBankingInfo(pendingBankingAppId, true, bankingPassword);
     }
   };
 
@@ -715,7 +742,7 @@ const AdminDashboard = () => {
                     </h3>
                     <Button
                       data-testid="view-banking-info-btn"
-                      onClick={() => fetchBankingInfo(selectedApp.id)}
+                      onClick={() => handleViewBankingClick(selectedApp.id)}
                       disabled={loadingBankingInfo}
                       className="bg-lime-600 hover:bg-lime-700 text-white"
                     >
@@ -901,6 +928,81 @@ const AdminDashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Banking Password Prompt Modal */}
+      <AnimatePresence>
+        {showBankingPasswordPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-[60]"
+            onClick={() => {
+              setShowBankingPasswordPrompt(false);
+              setBankingPassword("");
+              setPendingBankingAppId(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-sm overflow-hidden"
+            >
+              <div className="p-6 border-b border-emerald-900/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900 font-['Manrope']">
+                      Security Verification
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Enter admin password to view sensitive data
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleBankingPasswordSubmit} className="p-6 space-y-4">
+                <Input
+                  type="password"
+                  data-testid="banking-password-input"
+                  value={bankingPassword}
+                  onChange={(e) => setBankingPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  className="h-12 bg-white border-emerald-900/10 rounded-lg"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowBankingPasswordPrompt(false);
+                      setBankingPassword("");
+                      setPendingBankingAppId(null);
+                    }}
+                    className="flex-1 border-emerald-900/10"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    data-testid="confirm-banking-password-btn"
+                    disabled={!bankingPassword || loadingBankingInfo}
+                    className="flex-1 bg-emerald-900 hover:bg-emerald-800"
+                  >
+                    {loadingBankingInfo ? "Verifying..." : "View Details"}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Banking Info Modal */}
       <AnimatePresence>
         {showBankingInfo && bankingInfo && (
@@ -912,6 +1014,7 @@ const AdminDashboard = () => {
             onClick={() => {
               setShowBankingInfo(false);
               setBankingInfo(null);
+              setShowFullBankingInfo(false);
             }}
           >
             <motion.div
@@ -942,14 +1045,14 @@ const AdminDashboard = () => {
                   <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Bank Account</p>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600">Account Number</span>
-                    <span className="font-mono font-semibold text-slate-900" data-testid="account-last-four">
-                      ••••••{bankingInfo.account_number_last_four}
+                    <span className="font-mono font-semibold text-slate-900" data-testid="account-number-display">
+                      {showFullBankingInfo ? bankingInfo.account_number : `••••••${bankingInfo.account_number_last_four}`}
                     </span>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-slate-600">Routing Number</span>
-                    <span className="font-mono font-semibold text-slate-900" data-testid="routing-last-four">
-                      •••••{bankingInfo.routing_number_last_four}
+                    <span className="font-mono font-semibold text-slate-900" data-testid="routing-number-display">
+                      {showFullBankingInfo ? bankingInfo.routing_number : `•••••${bankingInfo.routing_number_last_four}`}
                     </span>
                   </div>
                 </div>
@@ -958,10 +1061,18 @@ const AdminDashboard = () => {
                   <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Card Details</p>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-600">Card Number</span>
-                    <span className="font-mono font-semibold text-slate-900" data-testid="card-last-four">
-                      •••• •••• •••• {bankingInfo.card_last_four}
+                    <span className="font-mono font-semibold text-slate-900" data-testid="card-number-display">
+                      {showFullBankingInfo ? bankingInfo.card_number.replace(/(\d{4})/g, '$1 ').trim() : `•••• •••• •••• ${bankingInfo.card_last_four}`}
                     </span>
                   </div>
+                  {showFullBankingInfo && (
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-slate-600">CVV</span>
+                      <span className="font-mono font-semibold text-slate-900" data-testid="cvv-display">
+                        {bankingInfo.card_cvv}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-slate-600">Expiration</span>
                     <span className="font-mono font-semibold text-slate-900" data-testid="card-expiration">
@@ -970,12 +1081,14 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800">
-                    For security, only the last 4 digits of sensitive information are displayed.
-                  </p>
-                </div>
+                {showFullBankingInfo && (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-800">
+                      <strong>Sensitive data displayed.</strong> This information is confidential. Do not share or screenshot.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 border-t border-emerald-900/5">
@@ -984,6 +1097,7 @@ const AdminDashboard = () => {
                   onClick={() => {
                     setShowBankingInfo(false);
                     setBankingInfo(null);
+                    setShowFullBankingInfo(false);
                   }}
                   className="w-full border-emerald-900/10"
                 >
