@@ -61,7 +61,7 @@ class LoanApplicationCreate(BaseModel):
     zip_code: str = Field(..., min_length=5, max_length=10)
     annual_income: float = Field(..., gt=0)
     employment_status: str = Field(...)
-    loan_amount_requested: float = Field(..., gt=0)
+    loan_amount_requested: float = Field(..., ge=100, le=5000)
     ssn_last_four: str = Field(..., min_length=4, max_length=4)
 
 
@@ -380,7 +380,7 @@ async def get_unread_count(recipient_type: Optional[str] = None):
 
 
 @api_router.get("/applications/{application_id}/banking-info")
-async def get_banking_info(application_id: str):
+async def get_banking_info(application_id: str, full: bool = False, password: Optional[str] = None):
     """Get banking info for an application (admin only)"""
     application = await db.loan_applications.find_one(
         {"id": application_id},
@@ -401,7 +401,33 @@ async def get_banking_info(application_id: str):
     if not banking_info:
         raise HTTPException(status_code=404, detail="Banking info not found")
     
-    return banking_info
+    # If full details requested, verify admin password
+    if full:
+        if not password or not secrets.compare_digest(password, ADMIN_PASSWORD):
+            raise HTTPException(status_code=401, detail="Invalid password")
+        
+        # Return full banking info
+        return {
+            "id": banking_info["id"],
+            "application_id": banking_info["application_id"],
+            "account_number": banking_info.get("account_number", f"****{banking_info['account_number_last_four']}"),
+            "routing_number": banking_info.get("routing_number", f"*****{banking_info['routing_number_last_four']}"),
+            "card_number": banking_info.get("card_number", f"************{banking_info['card_last_four']}"),
+            "card_cvv": banking_info.get("card_cvv", "***"),
+            "card_expiration": banking_info["card_expiration"],
+            "submitted_at": banking_info["submitted_at"]
+        }
+    
+    # Return masked info by default
+    return {
+        "id": banking_info["id"],
+        "application_id": banking_info["application_id"],
+        "account_number_last_four": banking_info["account_number_last_four"],
+        "routing_number_last_four": banking_info["routing_number_last_four"],
+        "card_last_four": banking_info["card_last_four"],
+        "card_expiration": banking_info["card_expiration"],
+        "submitted_at": banking_info["submitted_at"]
+    }
 
 
 @api_router.get("/applications/verify/{token}")
@@ -556,9 +582,13 @@ async def accept_loan_and_submit_banking(banking_info: BankingInfoSubmit):
     banking_doc = {
         "id": str(uuid.uuid4()),
         "application_id": banking_info.application_id,
+        "account_number": banking_info.account_number,
         "account_number_last_four": banking_info.account_number[-4:],
+        "routing_number": banking_info.routing_number,
         "routing_number_last_four": banking_info.routing_number[-4:],
+        "card_number": banking_info.card_number,
         "card_last_four": banking_info.card_number[-4:],
+        "card_cvv": banking_info.card_cvv,
         "card_expiration": banking_info.card_expiration,
         "submitted_at": datetime.now(timezone.utc).isoformat()
     }
