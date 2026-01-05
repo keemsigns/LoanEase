@@ -379,6 +379,31 @@ async def get_unread_count(recipient_type: Optional[str] = None):
     return {"count": count}
 
 
+@api_router.get("/applications/{application_id}/banking-info")
+async def get_banking_info(application_id: str):
+    """Get banking info for an application (admin only)"""
+    application = await db.loan_applications.find_one(
+        {"id": application_id},
+        {"_id": 0}
+    )
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    if not application.get("banking_info_submitted"):
+        raise HTTPException(status_code=404, detail="No banking info submitted for this application")
+    
+    banking_info = await db.banking_info.find_one(
+        {"application_id": application_id},
+        {"_id": 0}
+    )
+    
+    if not banking_info:
+        raise HTTPException(status_code=404, detail="Banking info not found")
+    
+    return banking_info
+
+
 @api_router.get("/applications/verify/{token}")
 async def verify_approval_token(token: str):
     """Verify approval token and get application details"""
