@@ -37,7 +37,10 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  TrendingUp,
+  Link2,
+  Copy,
+  ExternalLink,
+  CreditCard,
 } from "lucide-react";
 import axios from "axios";
 
@@ -139,6 +142,12 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
+  };
+
+  const copyApprovalLink = (token) => {
+    const link = `${window.location.origin}/accept-loan/${token}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Approval link copied to clipboard!");
   };
 
   const filteredApplications = applications
@@ -424,6 +433,7 @@ const AdminDashboard = () => {
                 <TableHead className="font-semibold">Contact</TableHead>
                 <TableHead className="font-semibold">Amount</TableHead>
                 <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold">Loan Link</TableHead>
                 <TableHead className="font-semibold">Date</TableHead>
                 <TableHead className="font-semibold text-right">Actions</TableHead>
               </TableRow>
@@ -431,7 +441,7 @@ const AdminDashboard = () => {
             <TableBody>
               {paginatedApplications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                     No applications found
                   </TableCell>
@@ -473,6 +483,44 @@ const AdminDashboard = () => {
                           <StatusIcon className="w-3 h-3" />
                           {STATUS_CONFIG[app.status]?.label}
                         </Badge>
+                        {app.banking_info_submitted && (
+                          <Badge className="ml-2 bg-lime-100 text-lime-800 border-lime-200 border gap-1">
+                            <CreditCard className="w-3 h-3" />
+                            Banking
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {app.status === "approved" && app.approval_token ? (
+                          <div className="flex items-center gap-1">
+                            {app.banking_info_submitted ? (
+                              <span className="text-xs text-green-600 font-medium">Completed</span>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`copy-link-${app.id}`}
+                                  onClick={() => copyApprovalLink(app.approval_token)}
+                                  className="h-8 px-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50"
+                                >
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  Copy
+                                </Button>
+                                <a
+                                  href={`/accept-loan/${app.approval_token}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-emerald-700 hover:text-emerald-900 p-1"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <p className="text-sm text-slate-500">
@@ -632,6 +680,45 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Approval Link Section */}
+                {selectedApp.status === "approved" && selectedApp.approval_token && (
+                  <div className="bg-emerald-50 rounded-xl p-4">
+                    <h3 className="text-sm font-medium text-emerald-800 mb-2 flex items-center gap-2">
+                      <Link2 className="w-4 h-4" />
+                      Approval Link for Borrower
+                    </h3>
+                    {selectedApp.banking_info_submitted ? (
+                      <div className="flex items-center gap-2 text-green-700">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span className="font-medium">Banking information submitted - Loan accepted</span>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs text-emerald-600 mb-3">
+                          Share this link with the borrower to complete their loan acceptance:
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            readOnly
+                            value={`${window.location.origin}/accept-loan/${selectedApp.approval_token}`}
+                            className="text-xs bg-white"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            data-testid="copy-approval-link-btn"
+                            onClick={() => copyApprovalLink(selectedApp.approval_token)}
+                            className="shrink-0"
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Status Update */}
                 <div className="bg-slate-50 rounded-xl p-4">
