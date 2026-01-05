@@ -922,6 +922,10 @@ class LoanApplicationAPITester:
         self.test_get_application()
         self.test_get_all_applications()
         
+        # Test NEW loan amount limits ($100-$5000)
+        print("\n💰 Testing NEW Loan Amount Limits ($100-$5000)...")
+        self.test_loan_amount_limits()
+        
         # Test error handling
         self.test_invalid_application()
         self.test_nonexistent_application()
@@ -943,6 +947,10 @@ class LoanApplicationAPITester:
         self.test_verify_approval_token()
         self.test_accept_loan_banking_info()
         self.test_banking_info_validation()
+        
+        # Test NEW admin password for banking info
+        print("\n🔒 Testing Admin Password for Banking Info...")
+        self.test_banking_info_with_password()
         
         # Test new document upload features
         print("\n📄 Testing Document Upload Features...")
