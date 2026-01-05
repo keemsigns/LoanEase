@@ -689,6 +689,41 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
+                {/* Documents Section */}
+                {selectedApp.documents && selectedApp.documents.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-3">
+                      Uploaded Documents ({selectedApp.documents.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {selectedApp.documents.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between bg-slate-50 rounded-lg p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-slate-400" />
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">{doc.filename}</p>
+                              <p className="text-xs text-slate-500">
+                                {(doc.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <a
+                            href={`${API}/applications/${selectedApp.id}/documents/${doc.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-700 hover:text-emerald-900 text-sm font-medium"
+                          >
+                            View
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Approval Link Section */}
                 {selectedApp.status === "approved" && selectedApp.approval_token && (
                   <div className="bg-emerald-50 rounded-xl p-4">
@@ -731,29 +766,80 @@ const AdminDashboard = () => {
                 {/* Status Update */}
                 <div className="bg-slate-50 rounded-xl p-4">
                   <h3 className="text-sm font-medium text-slate-700 mb-3">Update Status</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-                      const Icon = config.icon;
-                      return (
+                  
+                  {/* Document Request Section */}
+                  {showDocumentRequest ? (
+                    <div className="space-y-3 mb-4">
+                      <textarea
+                        data-testid="document-request-message"
+                        value={documentRequestMessage}
+                        onChange={(e) => setDocumentRequestMessage(e.target.value)}
+                        placeholder="Describe what documents are needed (e.g., 'Please upload proof of income and ID')"
+                        className="w-full h-24 p-3 border border-emerald-900/10 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-900"
+                      />
+                      <div className="flex gap-2">
                         <Button
-                          key={status}
-                          variant={selectedApp.status === status ? "default" : "outline"}
                           size="sm"
-                          data-testid={`status-btn-${status}`}
-                          onClick={() => handleStatusChange(selectedApp.id, status)}
-                          disabled={selectedApp.status === status}
-                          className={
-                            selectedApp.status === status
-                              ? "bg-emerald-900"
-                              : "border-emerald-900/10"
-                          }
+                          data-testid="confirm-document-request-btn"
+                          onClick={() => handleStatusChange(selectedApp.id, "documents_required", documentRequestMessage)}
+                          className="bg-orange-600 hover:bg-orange-700"
                         >
-                          <Icon className="w-4 h-4 mr-1" />
-                          {config.label}
+                          <FileText className="w-4 h-4 mr-1" />
+                          Send Request
                         </Button>
-                      );
-                    })}
-                  </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setShowDocumentRequest(false);
+                            setDocumentRequestMessage("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(STATUS_CONFIG).map(([status, config]) => {
+                        const Icon = config.icon;
+                        if (status === "documents_required") {
+                          return (
+                            <Button
+                              key={status}
+                              variant="outline"
+                              size="sm"
+                              data-testid="request-documents-btn"
+                              onClick={() => setShowDocumentRequest(true)}
+                              disabled={selectedApp.status === status}
+                              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+                            >
+                              <Icon className="w-4 h-4 mr-1" />
+                              Request Docs
+                            </Button>
+                          );
+                        }
+                        return (
+                          <Button
+                            key={status}
+                            variant={selectedApp.status === status ? "default" : "outline"}
+                            size="sm"
+                            data-testid={`status-btn-${status}`}
+                            onClick={() => handleStatusChange(selectedApp.id, status)}
+                            disabled={selectedApp.status === status}
+                            className={
+                              selectedApp.status === status
+                                ? "bg-emerald-900"
+                                : "border-emerald-900/10"
+                            }
+                          >
+                            <Icon className="w-4 h-4 mr-1" />
+                            {config.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
