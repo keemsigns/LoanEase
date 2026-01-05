@@ -808,6 +808,15 @@ class LoanApplicationAPITester:
         self.test_accept_loan_banking_info()
         self.test_banking_info_validation()
         
+        # Test new document upload features
+        print("\n📄 Testing Document Upload Features...")
+        self.test_request_documents_status()
+        self.test_verify_document_upload_token()
+        self.test_upload_document()
+        self.test_upload_invalid_document()
+        self.test_get_uploaded_document()
+        self.test_upload_with_invalid_token()
+        
         # Print summary
         print("-" * 50)
         print(f"📊 Backend Tests Summary:")
