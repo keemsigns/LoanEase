@@ -1,11 +1,13 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import secrets
+import aiofiles
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Literal
@@ -14,6 +16,10 @@ from datetime import datetime, timezone
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Create uploads directory
+UPLOAD_DIR = ROOT_DIR / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -80,11 +86,15 @@ class LoanApplication(BaseModel):
     approval_token: Optional[str] = None
     loan_accepted: bool = False
     banking_info_submitted: bool = False
+    document_upload_token: Optional[str] = None
+    document_request_message: Optional[str] = None
+    documents: List[dict] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class StatusUpdate(BaseModel):
-    status: Literal["pending", "under_review", "approved", "rejected"]
+    status: Literal["pending", "under_review", "documents_required", "approved", "rejected"]
+    document_request_message: Optional[str] = None
 
 
 class Notification(BaseModel):
@@ -250,15 +260,29 @@ async def update_application_status(application_id: str, status_update: StatusUp
         "under_review": f"Dear {application['first_name']},\n\nYour loan application (Ref: {application_id[:8].upper()}) is now under review. Our team is carefully evaluating your application.\n\nWe will notify you once a decision has been made.\n\nBest regards,\nLoanEase Team",
         "approved": f"Dear {application['first_name']},\n\nCongratulations! Your loan application (Ref: {application_id[:8].upper()}) has been APPROVED!\n\nLoan Amount: ${application['loan_amount_requested']:,.2f}\n\nOur team will contact you shortly with the next steps.\n\nBest regards,\nLoanEase Team",
         "rejected": f"Dear {application['first_name']},\n\nWe regret to inform you that your loan application (Ref: {application_id[:8].upper()}) has been declined at this time.\n\nIf you have any questions, please don't hesitate to contact us.\n\nBest regards,\nLoanEase Team",
-        "pending": f"Dear {application['first_name']},\n\nYour loan application (Ref: {application_id[:8].upper()}) status has been updated to pending.\n\nBest regards,\nLoanEase Team"
+        "pending": f"Dear {application['first_name']},\n\nYour loan application (Ref: {application_id[:8].upper()}) status has been updated to pending.\n\nBest regards,\nLoanEase Team",
+        "documents_required": f"Dear {application['first_name']},\n\nWe need additional documents to process your loan application (Ref: {application_id[:8].upper()}).\n\n{status_update.document_request_message or 'Please upload the requested documents.'}\n\nPlease visit our Track Application page and enter your email to upload the required documents.\n\nBest regards,\nLoanEase Team"
     }
     
     status_subjects = {
         "under_review": "Application Under Review - LoanEase",
         "approved": "🎉 Application Approved - LoanEase",
         "rejected": "Application Update - LoanEase",
-        "pending": "Application Status Update - LoanEase"
+        "pending": "Application Status Update - LoanEase",
+        "documents_required": "📄 Documents Required - LoanEase"
     }
+    
+    # Generate document upload token when documents are requested
+    document_upload_token = None
+    if new_status == "documents_required" and old_status != "documents_required":
+        document_upload_token = str(uuid.uuid4())
+        await db.loan_applications.update_one(
+            {"id": application_id},
+            {"$set": {
+                "document_upload_token": document_upload_token,
+                "document_request_message": status_update.document_request_message or "Please upload supporting documents."
+            }}
+        )
     
     # Generate approval token when status changes to approved
     approval_token = None
