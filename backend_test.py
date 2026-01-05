@@ -205,6 +205,201 @@ class LoanApplicationAPITester:
             self.log_test("Non-existent Application", False, str(e))
             return False
 
+    def test_admin_login(self):
+        """Test admin login endpoint"""
+        # Test valid password
+        try:
+            response = requests.post(
+                f"{self.api_url}/admin/login",
+                json={"password": "admin123"},
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('success') == True:
+                    details += f", Login successful"
+                else:
+                    success = False
+                    details += ", Login response invalid"
+            
+            self.log_test("Admin Login (Valid Password)", success, details)
+        except Exception as e:
+            self.log_test("Admin Login (Valid Password)", False, str(e))
+        
+        # Test invalid password
+        try:
+            response = requests.post(
+                f"{self.api_url}/admin/login",
+                json={"password": "wrongpassword"},
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 401
+            details = f"Status: {response.status_code}"
+            
+            self.log_test("Admin Login (Invalid Password)", success, details)
+        except Exception as e:
+            self.log_test("Admin Login (Invalid Password)", False, str(e))
+
+    def test_update_application_status(self):
+        """Test updating application status"""
+        if not self.test_application_id:
+            self.log_test("Update Application Status", False, "No application ID available")
+            return False
+        
+        try:
+            response = requests.patch(
+                f"{self.api_url}/applications/{self.test_application_id}/status",
+                json={"status": "under_review"},
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('status') == 'under_review':
+                    details += f", Status updated to under_review"
+                else:
+                    success = False
+                    details += ", Status not updated correctly"
+            
+            self.log_test("Update Application Status", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Update Application Status", False, str(e))
+            return False
+
+    def test_get_notifications(self):
+        """Test getting all notifications"""
+        try:
+            response = requests.get(f"{self.api_url}/notifications", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if isinstance(data, list):
+                    details += f", Found {len(data)} notifications"
+                    if len(data) > 0:
+                        self.test_notification_id = data[0].get('id')
+                else:
+                    success = False
+                    details += ", Response is not a list"
+            
+            self.log_test("Get All Notifications", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get All Notifications", False, str(e))
+            return False
+
+    def test_get_applicant_notifications(self):
+        """Test getting notifications for specific applicant"""
+        test_email = "john.doe@example.com"
+        try:
+            response = requests.get(f"{self.api_url}/notifications/applicant/{test_email}", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if isinstance(data, list):
+                    details += f", Found {len(data)} notifications for {test_email}"
+                else:
+                    success = False
+                    details += ", Response is not a list"
+            
+            self.log_test("Get Applicant Notifications", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Applicant Notifications", False, str(e))
+            return False
+
+    def test_dashboard_stats(self):
+        """Test getting dashboard statistics"""
+        try:
+            response = requests.get(f"{self.api_url}/stats", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                required_fields = ['total_applications', 'pending', 'under_review', 'approved', 'rejected']
+                if all(field in data for field in required_fields):
+                    details += f", Stats: {data['total_applications']} total, {data['pending']} pending"
+                else:
+                    success = False
+                    details += ", Missing required stat fields"
+            
+            self.log_test("Dashboard Statistics", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Dashboard Statistics", False, str(e))
+            return False
+
+    def test_mark_notification_read(self):
+        """Test marking notification as read"""
+        if not self.test_notification_id:
+            self.log_test("Mark Notification Read", False, "No notification ID available")
+            return False
+        
+        try:
+            response = requests.patch(
+                f"{self.api_url}/notifications/{self.test_notification_id}/read",
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('success') == True:
+                    details += f", Notification marked as read"
+                else:
+                    success = False
+                    details += ", Mark read response invalid"
+            
+            self.log_test("Mark Notification Read", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Mark Notification Read", False, str(e))
+            return False
+
+    def test_unread_count(self):
+        """Test getting unread notification count"""
+        try:
+            response = requests.get(f"{self.api_url}/notifications/unread-count", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if 'count' in data:
+                    details += f", Unread count: {data['count']}"
+                else:
+                    success = False
+                    details += ", Missing count field"
+            
+            self.log_test("Unread Notification Count", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Unread Notification Count", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("🚀 Starting Backend API Tests...")
@@ -224,6 +419,16 @@ class LoanApplicationAPITester:
         # Test error handling
         self.test_invalid_application()
         self.test_nonexistent_application()
+        
+        # Test new admin and notification features
+        print("\n🔐 Testing Admin & Notification Features...")
+        self.test_admin_login()
+        self.test_update_application_status()
+        self.test_get_notifications()
+        self.test_get_applicant_notifications()
+        self.test_dashboard_stats()
+        self.test_mark_notification_read()
+        self.test_unread_count()
         
         # Print summary
         print("-" * 50)
