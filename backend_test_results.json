@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-01-05T20:54:27.073050",
-  "total_tests": 19,
-  "passed_tests": 19,
+  "timestamp": "2026-01-05T21:08:23.322957",
+  "total_tests": 25,
+  "passed_tests": 25,
   "success_rate": 100.0,
   "test_results": [
     {
@@ -12,7 +12,7 @@
     {
       "test": "Create Loan Application",
       "success": true,
-      "details": "Status: 200, Application ID: e51c3c49..."
+      "details": "Status: 200, Application ID: 11865fce..."
     },
     {
       "test": "Get Specific Application",
@@ -22,7 +22,7 @@
     {
       "test": "Get All Applications",
       "success": true,
-      "details": "Status: 200, Found 5 applications"
+      "details": "Status: 200, Found 8 applications"
     },
     {
       "test": "Invalid Application Validation",
@@ -52,17 +52,17 @@
     {
       "test": "Get All Notifications",
       "success": true,
-      "details": "Status: 200, Found 10 notifications"
+      "details": "Status: 200, Found 26 notifications"
     },
     {
       "test": "Get Applicant Notifications",
       "success": true,
-      "details": "Status: 200, Found 5 notifications for john.doe@example.com"
+      "details": "Status: 200, Found 9 notifications for john.doe@example.com"
     },
     {
       "test": "Dashboard Statistics",
       "success": true,
-      "details": "Status: 200, Stats: 5 total, 3 pending"
+      "details": "Status: 200, Stats: 8 total, 4 pending"
     },
     {
       "test": "Mark Notification Read",
@@ -72,7 +72,7 @@
     {
       "test": "Unread Notification Count",
       "success": true,
-      "details": "Status: 200, Unread count: 8"
+      "details": "Status: 200, Unread count: 23"
     },
     {
       "test": "Loan Calculator",
@@ -82,12 +82,12 @@
     {
       "test": "Approve Application & Token Generation",
       "success": true,
-      "details": "Status: 200, Status approved, Token generated: 9628686f..."
+      "details": "Status: 200, Status approved, Token generated: cb360ef8..."
     },
     {
       "test": "Verify Approval Token",
       "success": true,
-      "details": "Status: 200, Token verified for application e51c3c49..."
+      "details": "Status: 200, Token verified for application 11865fce..."
     },
     {
       "test": "Accept Loan & Banking Info",
@@ -98,6 +98,36 @@
       "test": "Banking Info Validation",
       "success": true,
       "details": "Status: 422"
+    },
+    {
+      "test": "Request Documents Status",
+      "success": true,
+      "details": "Status: 200, Status updated, Token generated: 9fca40d0..., Message: Please upload proof of income ..."
+    },
+    {
+      "test": "Verify Document Upload Token",
+      "success": true,
+      "details": "Status: 200, Token verified for application 11865fce..."
+    },
+    {
+      "test": "Upload Document",
+      "success": true,
+      "details": "Status: 200, Document uploaded: test_document.pdf"
+    },
+    {
+      "test": "Upload Invalid Document",
+      "success": true,
+      "details": "Status: 400"
+    },
+    {
+      "test": "Get Uploaded Document",
+      "success": true,
+      "details": "Status: 200, Document downloaded, Content-Type: application/pdf"
+    },
+    {
+      "test": "Upload with Invalid Token",
+      "success": true,
+      "details": "Status: 404"
     }
   ]
 }
