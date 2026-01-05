@@ -1,0 +1,130 @@
+{
+  "design_system": {
+    "typography": {
+      "font_family": {
+        "heading": "Manrope, sans-serif",
+        "body": "DM Sans, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-5xl md:text-6xl font-bold tracking-tight leading-[1.1]",
+        "h2": "text-4xl md:text-5xl font-semibold tracking-tight",
+        "h3": "text-2xl md:text-3xl font-medium",
+        "body_lg": "text-lg md:text-xl leading-relaxed",
+        "body_base": "text-base leading-relaxed",
+        "caption": "text-sm text-muted-foreground uppercase tracking-wider"
+      }
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "name": "Deep Emerald",
+          "hex": "#064e3b",
+          "tailwind": "emerald-900",
+          "usage": "Primary buttons, active states, headings"
+        },
+        "secondary": {
+          "name": "Warm Sand",
+          "hex": "#fdfbf7",
+          "tailwind": "bg-[#fdfbf7]",
+          "usage": "Page background, card backgrounds"
+        },
+        "accent": {
+          "name": "Electric Lime",
+          "hex": "#a3e635",
+          "tailwind": "lime-400",
+          "usage": "CTAs, success states, highlights"
+        },
+        "text": {
+          "primary": "#0f172a",
+          "secondary": "#475569",
+          "muted": "#94a3b8"
+        }
+      },
+      "theme_mode": "light"
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-12 lg:p-24",
+      "section_gap": "gap-16 md:gap-24",
+      "element_gap": "gap-4 md:gap-6"
+    },
+    "visual_enhancers": {
+      "radius": "rounded-xl",
+      "shadows": {
+        "card": "shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+        "hover": "shadow-[0_12px_24px_rgba(0,0,0,0.08)]"
+      },
+      "borders": "border border-emerald-900/10",
+      "glass": "backdrop-blur-md bg-white/60 border-white/20"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-emerald-900 text-white hover:bg-emerald-800 rounded-full px-8 py-6 text-lg font-medium transition-all hover:scale-[1.02] active:scale-[0.98]",
+      "secondary": "bg-white border border-emerald-900/10 text-emerald-900 hover:bg-emerald-50 rounded-full px-8 py-6 text-lg font-medium transition-all",
+      "ghost": "text-emerald-900 hover:bg-emerald-900/5 rounded-lg px-4 py-2"
+    },
+    "inputs": {
+      "base": "h-14 bg-white border-emerald-900/10 focus:border-emerald-900 focus:ring-1 focus:ring-emerald-900 rounded-lg text-lg px-4 transition-all placeholder:text-slate-400",
+      "label": "text-sm font-medium text-slate-600 mb-2 block"
+    },
+    "cards": {
+      "base": "bg-white rounded-2xl border border-emerald-900/5 p-8 shadow-sm hover:shadow-md transition-all duration-300"
+    }
+  },
+  "layout_strategies": {
+    "landing_page": {
+      "hero": "Split screen layout. Left: Typography & CTA. Right: Immersive image with soft edges.",
+      "features": "Bento grid layout (Mode A) showcasing trust, speed, and simplicity.",
+      "testimonials": "Horizontal scroll with large typography."
+    },
+    "application_form": {
+      "structure": "Multi-step wizard (Progress bar at top).",
+      "step_layout": "Centered container (max-w-2xl) with focus on one task at a time.",
+      "navigation": "Back button (top left), Continue button (full width bottom)."
+    }
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "hero_main",
+        "url": "https://images.unsplash.com/photo-1648737966670-a6a53917ed19?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwyfHxoYXBweSUyMGNvdXBsZSUyMGxhcHRvcCUyMGZpbmFuY2V8ZW58MHx8fHwxNzY3NjQ0MDIwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Happy couple looking at laptop, conveying trust and ease.",
+        "placement": "Hero Section Right Side"
+      },
+      {
+        "category": "trust_home",
+        "url": "https://images.unsplash.com/photo-1595944356863-e624f8234e1e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBob21lJTIwa2V5c3xlbnwwfHx8fDE3Njc2NDQwMjJ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern home keys, symbolizing the goal of the loan.",
+        "placement": "Features Section or Success Page"
+      },
+      {
+        "category": "professional_context",
+        "url": "https://images.unsplash.com/photo-1618544976420-1f213fcf2052?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwzfHxoYXBweSUyMGNvdXBsZSUyMGxhcHRvcCUyMGZpbmFuY2V8ZW58MHx8fHwxNzY3NjQ0MDIwfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Professional setting, woman with laptop.",
+        "placement": "About/Trust Section"
+      }
+    ],
+    "icons": {
+      "library": "lucide-react",
+      "preferred": ["ShieldCheck", "Zap", "Clock", "CheckCircle2", "ArrowRight", "ChevronLeft", "Banknote", "Home"]
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. SETUP: Install 'lucide-react' and 'framer-motion' if not present.",
+    "2. THEME: Implement the 'Warm Sand' background (#fdfbf7) globally in index.css. Do NOT use pure white for the body background.",
+    "3. FONTS: Import 'Manrope' and 'DM Sans' from Google Fonts in index.css.",
+    "4. COMPONENTS: Use Shadcn UI for the form primitives (Input, Select, Checkbox, Form, Button). Customize them to match the 'Deep Emerald' theme.",
+    "5. FORM LOGIC: Build a multi-step form using a state machine or simple step state. Do NOT put all fields on one long page.",
+    "6. VALIDATION: Use 'zod' and 'react-hook-form' for robust validation. Show errors inline.",
+    "7. ANIMATION: Use 'framer-motion' for smooth transitions between form steps (slide in/out).",
+    "8. ACCESSIBILITY: Ensure all inputs have labels and high contrast focus states.",
+    "9. MOCKING: Mock the backend submission with a 2-second delay and a success state."
+  ],
+  "universal_guidelines": [
+    "Do not use gradients for text.",
+    "Use 2-3x more spacing than typical designs.",
+    "Every interaction needs micro-animations.",
+    "All interactive elements must include data-testid attributes."
+  ]
+}
