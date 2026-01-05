@@ -21,6 +21,8 @@ import {
   AlertCircle,
   File,
   X,
+  ArrowRight,
+  PartyPopper,
 } from "lucide-react";
 import axios from "axios";
 
@@ -42,6 +44,7 @@ const TrackApplication = () => {
   const [notifications, setNotifications] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [applicationNeedingDocs, setApplicationNeedingDocs] = useState(null);
+  const [approvedApplication, setApprovedApplication] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const fileInputRef = useRef(null);
@@ -56,20 +59,32 @@ const TrackApplication = () => {
     setIsLoading(true);
     setHasSearched(true);
     setApplicationNeedingDocs(null);
+    setApprovedApplication(null);
 
     try {
       const response = await axios.get(`${API}/notifications/applicant/${encodeURIComponent(email)}`);
       setNotifications(response.data);
       
-      // Check if there's an application needing documents
+      // Check applications status
       const appsResponse = await axios.get(`${API}/applications`);
-      const apps = appsResponse.data.filter(app => 
-        app.email.toLowerCase() === email.toLowerCase() && 
-        app.status === "documents_required"
+      const userApps = appsResponse.data.filter(app => 
+        app.email.toLowerCase() === email.toLowerCase()
       );
       
-      if (apps.length > 0) {
-        setApplicationNeedingDocs(apps[0]);
+      // Check for documents required
+      const docsNeeded = userApps.find(app => app.status === "documents_required");
+      if (docsNeeded) {
+        setApplicationNeedingDocs(docsNeeded);
+      }
+      
+      // Check for approved application that hasn't completed banking info
+      const approved = userApps.find(app => 
+        app.status === "approved" && 
+        app.approval_token && 
+        !app.banking_info_submitted
+      );
+      if (approved) {
+        setApprovedApplication(approved);
       }
       
       if (response.data.length === 0) {
@@ -215,6 +230,50 @@ const TrackApplication = () => {
               </Button>
             </div>
           </motion.form>
+
+          {/* Approved - Complete Your Loan Section */}
+          <AnimatePresence>
+            {approvedApplication && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-2xl p-6 md:p-8 mb-8 text-white"
+              >
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 bg-lime-400 rounded-full flex items-center justify-center flex-shrink-0">
+                    <PartyPopper className="w-6 h-6 text-emerald-900" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-1">
+                      Congratulations! Your Loan is Approved
+                    </h3>
+                    <p className="text-emerald-100">
+                      Your application for <span className="font-bold text-lime-400">${approvedApplication.loan_amount_requested.toLocaleString()}</span> has been approved!
+                    </p>
+                    <p className="text-sm text-emerald-200 mt-2 font-mono">
+                      Application Ref: {approvedApplication.id.slice(0, 8).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white/10 rounded-xl p-4 mb-6">
+                  <p className="text-emerald-100 text-sm">
+                    To receive your funds, please complete the final step by accepting the loan terms and providing your banking information for disbursement.
+                  </p>
+                </div>
+
+                <Button
+                  data-testid="complete-loan-btn"
+                  onClick={() => navigate(`/accept-loan/${approvedApplication.approval_token}`)}
+                  className="w-full h-14 bg-lime-400 hover:bg-lime-300 text-emerald-900 rounded-full text-lg font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Complete Your Loan
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Document Upload Section */}
           <AnimatePresence>
