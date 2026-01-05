@@ -40,13 +40,23 @@ const LandingPage = () => {
             <Banknote className="w-8 h-8 text-emerald-900" />
             <span className="text-xl font-bold text-emerald-900 font-['Manrope']">LoanEase</span>
           </div>
-          <Button
-            data-testid="nav-apply-btn"
-            onClick={() => navigate("/apply")}
-            className="bg-emerald-900 hover:bg-emerald-800 text-white rounded-full px-6 py-2 font-medium transition-all hover:scale-105"
-          >
-            Apply Now
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              data-testid="nav-track-btn"
+              variant="ghost"
+              onClick={() => navigate("/track")}
+              className="text-emerald-900 hover:bg-emerald-50 rounded-full px-4 py-2 font-medium"
+            >
+              Track Application
+            </Button>
+            <Button
+              data-testid="nav-apply-btn"
+              onClick={() => navigate("/apply")}
+              className="bg-emerald-900 hover:bg-emerald-800 text-white rounded-full px-6 py-2 font-medium transition-all hover:scale-105"
+            >
+              Apply Now
+            </Button>
+          </div>
         </div>
       </nav>
 
