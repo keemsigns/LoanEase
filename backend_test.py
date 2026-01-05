@@ -400,6 +400,176 @@ class LoanApplicationAPITester:
             self.log_test("Unread Notification Count", False, str(e))
             return False
 
+    def test_loan_calculator(self):
+        """Test loan calculator endpoint"""
+        try:
+            # Test with default parameters
+            response = requests.get(f"{self.api_url}/calculator?amount=25000&rate=8.5&term=36", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                required_fields = ['loan_amount', 'interest_rate', 'loan_term_months', 'monthly_payment', 'total_payment', 'total_interest']
+                if all(field in data for field in required_fields):
+                    details += f", Monthly payment: ${data['monthly_payment']}, Total: ${data['total_payment']}"
+                    # Verify calculation makes sense
+                    if data['loan_amount'] == 25000 and data['monthly_payment'] > 0:
+                        details += ", Calculation valid"
+                    else:
+                        success = False
+                        details += ", Invalid calculation results"
+                else:
+                    success = False
+                    details += ", Missing required calculation fields"
+            
+            self.log_test("Loan Calculator", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Loan Calculator", False, str(e))
+            return False
+
+    def test_approve_application_and_token_generation(self):
+        """Test approving application and generating approval token"""
+        if not self.test_application_id:
+            self.log_test("Approve Application & Token Generation", False, "No application ID available")
+            return False
+        
+        try:
+            # Update status to approved
+            response = requests.patch(
+                f"{self.api_url}/applications/{self.test_application_id}/status",
+                json={"status": "approved"},
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('status') == 'approved' and data.get('approval_token'):
+                    self.approval_token = data.get('approval_token')
+                    details += f", Status approved, Token generated: {self.approval_token[:8]}..."
+                else:
+                    success = False
+                    details += ", Status not approved or token not generated"
+            
+            self.log_test("Approve Application & Token Generation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Approve Application & Token Generation", False, str(e))
+            return False
+
+    def test_verify_approval_token(self):
+        """Test verifying approval token"""
+        if not hasattr(self, 'approval_token') or not self.approval_token:
+            self.log_test("Verify Approval Token", False, "No approval token available")
+            return False
+        
+        try:
+            response = requests.get(f"{self.api_url}/applications/verify/{self.approval_token}", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('id') == self.test_application_id and data.get('status') == 'approved':
+                    details += f", Token verified for application {data['id'][:8]}..."
+                else:
+                    success = False
+                    details += ", Token verification failed or wrong application"
+            
+            self.log_test("Verify Approval Token", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Verify Approval Token", False, str(e))
+            return False
+
+    def test_accept_loan_banking_info(self):
+        """Test accepting loan and submitting banking information"""
+        if not hasattr(self, 'approval_token') or not self.approval_token:
+            self.log_test("Accept Loan & Banking Info", False, "No approval token available")
+            return False
+        
+        banking_data = {
+            "application_id": self.test_application_id,
+            "token": self.approval_token,
+            "agree_to_terms": True,
+            "account_number": "123456789012",
+            "routing_number": "123456789",
+            "card_number": "1234567890123456",
+            "card_cvv": "123",
+            "card_expiration": "12/25"
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/applications/accept-loan",
+                json=banking_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('success') == True:
+                    details += f", Banking info submitted successfully"
+                else:
+                    success = False
+                    details += ", Banking submission response invalid"
+            
+            self.log_test("Accept Loan & Banking Info", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Accept Loan & Banking Info", False, str(e))
+            return False
+
+    def test_banking_info_validation(self):
+        """Test banking info validation with invalid data"""
+        if not hasattr(self, 'approval_token'):
+            self.log_test("Banking Info Validation", False, "No approval token available")
+            return False
+        
+        # Test with missing required fields
+        invalid_data = {
+            "application_id": self.test_application_id,
+            "token": self.approval_token,
+            "agree_to_terms": False,  # Should fail
+            "account_number": "123",  # Too short
+            "routing_number": "123",  # Too short
+            "card_number": "123",     # Too short
+            "card_cvv": "1",          # Too short
+            "card_expiration": "1"    # Too short
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.api_url}/applications/accept-loan",
+                json=invalid_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            # Should return 400 or 422 for validation error
+            success = response.status_code in [400, 422]
+            details = f"Status: {response.status_code}"
+            
+            if not success:
+                details += f", Expected 400/422 validation error"
+            
+            self.log_test("Banking Info Validation", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Banking Info Validation", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("🚀 Starting Backend API Tests...")
