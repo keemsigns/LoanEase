@@ -399,6 +399,116 @@ async def verify_approval_token(token: str):
     return application
 
 
+@api_router.get("/applications/document-upload/{token}")
+async def verify_document_upload_token(token: str):
+    """Verify document upload token and get application details"""
+    application = await db.loan_applications.find_one(
+        {"document_upload_token": token, "status": "documents_required"},
+        {"_id": 0}
+    )
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Invalid or expired link")
+    
+    if isinstance(application['created_at'], str):
+        application['created_at'] = datetime.fromisoformat(application['created_at'])
+    
+    return application
+
+
+@api_router.post("/applications/{application_id}/upload-document")
+async def upload_document(
+    application_id: str,
+    token: str,
+    file: UploadFile = File(...)
+):
+    """Upload a document for an application"""
+    # Verify token
+    application = await db.loan_applications.find_one(
+        {"id": application_id, "document_upload_token": token},
+        {"_id": 0}
+    )
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Invalid application or token")
+    
+    # Validate file type
+    allowed_types = ["application/pdf", "image/jpeg", "image/png", "image/jpg"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only PDF, JPG, and PNG files are allowed")
+    
+    # Validate file size (max 10MB)
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+    
+    # Generate unique filename
+    file_extension = file.filename.split(".")[-1] if "." in file.filename else "pdf"
+    unique_filename = f"{application_id}_{uuid.uuid4()}.{file_extension}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(contents)
+    
+    # Store document metadata
+    document_meta = {
+        "id": str(uuid.uuid4()),
+        "filename": file.filename,
+        "stored_filename": unique_filename,
+        "content_type": file.content_type,
+        "size": len(contents),
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.loan_applications.update_one(
+        {"id": application_id},
+        {"$push": {"documents": document_meta}}
+    )
+    
+    # Create notification for admin
+    await create_notification(
+        recipient_type="admin",
+        recipient_email="admin@loanease.com",
+        application_id=application_id,
+        subject="Document Uploaded",
+        message=f"A new document '{file.filename}' has been uploaded for application {application_id[:8].upper()} by {application['first_name']} {application['last_name']}."
+    )
+    
+    return {"success": True, "document": document_meta}
+
+
+@api_router.get("/applications/{application_id}/documents/{document_id}")
+async def get_document(application_id: str, document_id: str):
+    """Download a document"""
+    application = await db.loan_applications.find_one(
+        {"id": application_id},
+        {"_id": 0, "documents": 1}
+    )
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    document = None
+    for doc in application.get("documents", []):
+        if doc["id"] == document_id:
+            document = doc
+            break
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    file_path = UPLOAD_DIR / document["stored_filename"]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=file_path,
+        filename=document["filename"],
+        media_type=document["content_type"]
+    )
+
+
 @api_router.post("/applications/accept-loan")
 async def accept_loan_and_submit_banking(banking_info: BankingInfoSubmit):
     """Accept loan terms and submit banking information"""
