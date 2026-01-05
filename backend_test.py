@@ -44,7 +44,7 @@ class LoanApplicationAPITester:
             return False
 
     def test_create_application(self):
-        """Test creating a loan application"""
+        """Test creating a loan application with new $100-$5000 limits"""
         test_data = {
             "first_name": "John",
             "last_name": "Doe",
@@ -57,7 +57,7 @@ class LoanApplicationAPITester:
             "zip_code": "10001",
             "annual_income": 75000.0,
             "employment_status": "employed",
-            "loan_amount_requested": 25000.0,
+            "loan_amount_requested": 2500.0,  # Within new $100-$5000 range
             "ssn_last_four": "1234"
         }
         
