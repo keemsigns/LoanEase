@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-01-05T21:08:23.322957",
-  "total_tests": 25,
-  "passed_tests": 25,
+  "timestamp": "2026-01-05T21:16:49.411467",
+  "total_tests": 28,
+  "passed_tests": 28,
   "success_rate": 100.0,
   "test_results": [
     {
@@ -12,7 +12,7 @@
     {
       "test": "Create Loan Application",
       "success": true,
-      "details": "Status: 200, Application ID: 11865fce..."
+      "details": "Status: 200, Application ID: 236116b9..."
     },
     {
       "test": "Get Specific Application",
@@ -22,7 +22,7 @@
     {
       "test": "Get All Applications",
       "success": true,
-      "details": "Status: 200, Found 8 applications"
+      "details": "Status: 200, Found 9 applications"
     },
     {
       "test": "Invalid Application Validation",
@@ -52,17 +52,17 @@
     {
       "test": "Get All Notifications",
       "success": true,
-      "details": "Status: 200, Found 26 notifications"
+      "details": "Status: 200, Found 47 notifications"
     },
     {
       "test": "Get Applicant Notifications",
       "success": true,
-      "details": "Status: 200, Found 9 notifications for john.doe@example.com"
+      "details": "Status: 200, Found 14 notifications for john.doe@example.com"
     },
     {
       "test": "Dashboard Statistics",
       "success": true,
-      "details": "Status: 200, Stats: 8 total, 4 pending"
+      "details": "Status: 200, Stats: 9 total, 3 pending"
     },
     {
       "test": "Mark Notification Read",
@@ -72,7 +72,7 @@
     {
       "test": "Unread Notification Count",
       "success": true,
-      "details": "Status: 200, Unread count: 23"
+      "details": "Status: 200, Unread count: 43"
     },
     {
       "test": "Loan Calculator",
@@ -82,12 +82,12 @@
     {
       "test": "Approve Application & Token Generation",
       "success": true,
-      "details": "Status: 200, Status approved, Token generated: cb360ef8..."
+      "details": "Status: 200, Status approved, Token generated: bd937572..."
     },
     {
       "test": "Verify Approval Token",
       "success": true,
-      "details": "Status: 200, Token verified for application 11865fce..."
+      "details": "Status: 200, Token verified for application 236116b9..."
     },
     {
       "test": "Accept Loan & Banking Info",
@@ -102,12 +102,12 @@
     {
       "test": "Request Documents Status",
       "success": true,
-      "details": "Status: 200, Status updated, Token generated: 9fca40d0..., Message: Please upload proof of income ..."
+      "details": "Status: 200, Status updated, Token generated: e87c1737..., Message: Please upload proof of income ..."
     },
     {
       "test": "Verify Document Upload Token",
       "success": true,
-      "details": "Status: 200, Token verified for application 11865fce..."
+      "details": "Status: 200, Token verified for application 236116b9..."
     },
     {
       "test": "Upload Document",
@@ -128,6 +128,21 @@
       "test": "Upload with Invalid Token",
       "success": true,
       "details": "Status: 404"
+    },
+    {
+      "test": "Get Banking Info",
+      "success": true,
+      "details": "Status: 200, Banking info retrieved - Account: \u2022\u2022\u2022\u20229012, Card: \u2022\u2022\u2022\u20223456, Last 4 digits format correct"
+    },
+    {
+      "test": "Get Banking Info (No Submission)",
+      "success": true,
+      "details": "Status: 404, Correctly returned 404 for application without banking info"
+    },
+    {
+      "test": "Get Banking Info (Non-existent App)",
+      "success": true,
+      "details": "Status: 404, Correctly returned 404 for non-existent application"
     }
   ]
 }
