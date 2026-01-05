@@ -158,8 +158,8 @@ const LandingPage = () => {
                   <CheckCircle2 className="w-6 h-6 text-emerald-900" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-emerald-900 font-['Manrope']">$50K+</p>
-                  <p className="text-sm text-slate-500">Average loan amount</p>
+                  <p className="text-2xl font-bold text-emerald-900 font-['Manrope']">$100-$5K</p>
+                  <p className="text-sm text-slate-500">Loan amounts available</p>
                 </div>
               </div>
             </motion.div>
