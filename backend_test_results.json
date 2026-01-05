@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-01-05T20:19:53.221034",
+  "total_tests": 6,
+  "passed_tests": 6,
+  "success_rate": 100.0,
+  "test_results": [
+    {
+      "test": "API Root Endpoint",
+      "success": true,
+      "details": "Status: 200, Response: {'message': 'Loan Application API'}"
+    },
+    {
+      "test": "Create Loan Application",
+      "success": true,
+      "details": "Status: 200, Application ID: 3249350b..."
+    },
+    {
+      "test": "Get Specific Application",
+      "success": true,
+      "details": "Status: 200, Retrieved application: John Doe"
+    },
+    {
+      "test": "Get All Applications",
+      "success": true,
+      "details": "Status: 200, Found 1 applications"
+    },
+    {
+      "test": "Invalid Application Validation",
+      "success": true,
+      "details": "Status: 422"
+    },
+    {
+      "test": "Non-existent Application",
+      "success": true,
+      "details": "Status: 404"
+    }
+  ]
+}
