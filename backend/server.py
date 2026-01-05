@@ -77,6 +77,9 @@ class LoanApplication(BaseModel):
     loan_amount_requested: float
     ssn_last_four: str
     status: str = "pending"
+    approval_token: Optional[str] = None
+    loan_accepted: bool = False
+    banking_info_submitted: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -104,6 +107,26 @@ class AdminLoginRequest(BaseModel):
 class AdminLoginResponse(BaseModel):
     success: bool
     message: str
+
+
+class BankingInfoSubmit(BaseModel):
+    application_id: str
+    token: str
+    agree_to_terms: bool
+    account_number: str = Field(..., min_length=8, max_length=17)
+    routing_number: str = Field(..., min_length=9, max_length=9)
+    card_number: str = Field(..., min_length=15, max_length=16)
+    card_cvv: str = Field(..., min_length=3, max_length=4)
+    card_expiration: str = Field(..., min_length=5, max_length=7)
+
+
+class LoanCalculation(BaseModel):
+    loan_amount: float
+    interest_rate: float
+    loan_term_months: int
+    monthly_payment: float
+    total_payment: float
+    total_interest: float
 
 
 # Helper function to create notifications
@@ -237,7 +260,20 @@ async def update_application_status(application_id: str, status_update: StatusUp
         "pending": "Application Status Update - LoanEase"
     }
     
+    # Generate approval token when status changes to approved
+    approval_token = None
+    if new_status == "approved" and old_status != "approved":
+        approval_token = str(uuid.uuid4())
+        await db.loan_applications.update_one(
+            {"id": application_id},
+            {"$set": {"approval_token": approval_token}}
+        )
+    
     if old_status != new_status:
+        # Include approval link in approved notification
+        if new_status == "approved" and approval_token:
+            status_messages["approved"] = f"Dear {application['first_name']},\n\nCongratulations! Your loan application (Ref: {application_id[:8].upper()}) has been APPROVED!\n\nLoan Amount: ${application['loan_amount_requested']:,.2f}\n\nTo complete your loan and receive funds, please click the link below to accept the terms and provide your banking information:\n\n[Complete Your Loan]\n\nThis is your unique secure link. Do not share it with anyone.\n\nBest regards,\nLoanEase Team"
+        
         await create_notification(
             recipient_type="applicant",
             recipient_email=application['email'],
@@ -317,6 +353,107 @@ async def get_unread_count(recipient_type: Optional[str] = None):
     
     count = await db.notifications.count_documents(query)
     return {"count": count}
+
+
+@api_router.get("/applications/verify/{token}")
+async def verify_approval_token(token: str):
+    """Verify approval token and get application details"""
+    application = await db.loan_applications.find_one(
+        {"approval_token": token, "status": "approved"},
+        {"_id": 0}
+    )
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Invalid or expired link")
+    
+    if application.get("banking_info_submitted"):
+        raise HTTPException(status_code=400, detail="Banking information already submitted")
+    
+    if isinstance(application['created_at'], str):
+        application['created_at'] = datetime.fromisoformat(application['created_at'])
+    
+    return application
+
+
+@api_router.post("/applications/accept-loan")
+async def accept_loan_and_submit_banking(banking_info: BankingInfoSubmit):
+    """Accept loan terms and submit banking information"""
+    # Verify token
+    application = await db.loan_applications.find_one(
+        {"id": banking_info.application_id, "approval_token": banking_info.token, "status": "approved"},
+        {"_id": 0}
+    )
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Invalid application or token")
+    
+    if application.get("banking_info_submitted"):
+        raise HTTPException(status_code=400, detail="Banking information already submitted")
+    
+    if not banking_info.agree_to_terms:
+        raise HTTPException(status_code=400, detail="You must agree to the loan terms")
+    
+    # Store banking info (in production, this should be encrypted)
+    banking_doc = {
+        "id": str(uuid.uuid4()),
+        "application_id": banking_info.application_id,
+        "account_number_last_four": banking_info.account_number[-4:],
+        "routing_number_last_four": banking_info.routing_number[-4:],
+        "card_last_four": banking_info.card_number[-4:],
+        "card_expiration": banking_info.card_expiration,
+        "submitted_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.banking_info.insert_one(banking_doc)
+    
+    # Update application
+    await db.loan_applications.update_one(
+        {"id": banking_info.application_id},
+        {"$set": {"loan_accepted": True, "banking_info_submitted": True}}
+    )
+    
+    # Notify applicant
+    await create_notification(
+        recipient_type="applicant",
+        recipient_email=application['email'],
+        application_id=banking_info.application_id,
+        subject="Loan Accepted - Funds Processing",
+        message=f"Dear {application['first_name']},\n\nThank you for accepting your loan terms and providing your banking information.\n\nLoan Amount: ${application['loan_amount_requested']:,.2f}\n\nYour funds will be disbursed to your account ending in {banking_info.account_number[-4:]} within 1-3 business days.\n\nBest regards,\nLoanEase Team"
+    )
+    
+    # Notify admin
+    await create_notification(
+        recipient_type="admin",
+        recipient_email="admin@loanease.com",
+        application_id=banking_info.application_id,
+        subject="Loan Accepted - Banking Info Submitted",
+        message=f"Application {banking_info.application_id[:8].upper()} for {application['first_name']} {application['last_name']} has accepted the loan and submitted banking information.\n\nAccount ending: {banking_info.account_number[-4:]}\nCard ending: {banking_info.card_number[-4:]}\n\nReady for disbursement."
+    )
+    
+    return {"success": True, "message": "Loan accepted and banking information submitted successfully"}
+
+
+@api_router.get("/calculator")
+async def calculate_loan(amount: float, rate: float = 8.5, term: int = 36):
+    """Calculate loan payments"""
+    monthly_rate = rate / 100 / 12
+    
+    if monthly_rate == 0:
+        monthly_payment = amount / term
+    else:
+        monthly_payment = amount * (monthly_rate * (1 + monthly_rate)**term) / ((1 + monthly_rate)**term - 1)
+    
+    total_payment = monthly_payment * term
+    total_interest = total_payment - amount
+    
+    return LoanCalculation(
+        loan_amount=amount,
+        interest_rate=rate,
+        loan_term_months=term,
+        monthly_payment=round(monthly_payment, 2),
+        total_payment=round(total_payment, 2),
+        total_interest=round(total_interest, 2)
+    )
 
 
 @api_router.get("/stats")

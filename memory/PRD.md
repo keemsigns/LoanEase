@@ -6,46 +6,61 @@ Build a loan application website where visitors or potential borrowers enter the
 ## User Personas
 - **Borrowers**: Individuals seeking personal loans who want a quick, simple application process
 - **Site Visitors**: People exploring loan options before committing to apply
+- **Administrators**: Staff members who review and approve/reject loan applications
 
 ## Core Requirements
-- Comprehensive loan application form collecting: Name, Email, Phone, DOB, Address (Street, City, State, ZIP), Income, Employment Status, Loan Amount, SSN (last 4 digits)
-- Modern/Minimal UI design
-- No admin dashboard
-- No email notifications
-- Data stored in MongoDB
+- Comprehensive loan application form collecting: Name, Email, Phone, DOB, Address, Income, Employment Status, Loan Amount, SSN (last 4)
+- Admin dashboard to manage applications
+- In-app notification system for status updates
+- Application status tracking for borrowers
 
 ## Architecture
-- **Frontend**: React with Shadcn UI components, Framer Motion for animations
+- **Frontend**: React with Shadcn UI, Framer Motion
 - **Backend**: FastAPI with MongoDB (Motor async driver)
-- **Database**: MongoDB - `loan_applications` collection
+- **Database**: MongoDB - `loan_applications`, `notifications` collections
 
 ## What's Been Implemented (Jan 2025)
-- [x] Landing page with hero section, features grid, and CTA
-- [x] Multi-step application form (3 steps: Personal Info → Address → Financial)
-- [x] Form validation with inline error messages
-- [x] Calendar date picker for DOB
-- [x] State dropdown with all US states
-- [x] Employment status dropdown
-- [x] Success page with application reference ID
-- [x] Backend API: POST /api/applications, GET /api/applications, GET /api/applications/{id}
-- [x] Responsive design with warm sand/emerald theme
+### Phase 1 - MVP
+- [x] Landing page with hero, features, CTA
+- [x] Multi-step application form (3 steps)
+- [x] Form validation with inline errors
+- [x] Success page with reference ID
+- [x] Backend API for applications
+
+### Phase 2 - Admin & Notifications
+- [x] Admin dashboard with password protection (admin123)
+- [x] Dashboard stats (total, pending, approved, rejected, total amount)
+- [x] Applications table with search & filter
+- [x] Application detail modal with full info
+- [x] Status management (pending → under_review → approved/rejected)
+- [x] In-app notification system (stored in DB)
+- [x] Notifications to admin on new applications
+- [x] Notifications to applicants on status changes
+- [x] Track Application page for borrowers to check status by email
+
+## API Endpoints
+- POST /api/applications - Submit new application
+- GET /api/applications - List all applications
+- GET /api/applications/{id} - Get single application
+- PATCH /api/applications/{id}/status - Update status
+- POST /api/admin/login - Admin authentication
+- GET /api/notifications - Get all notifications
+- GET /api/notifications/applicant/{email} - Get applicant notifications
+- GET /api/stats - Dashboard statistics
 
 ## Prioritized Backlog
-### P0 (Critical)
-- All P0 features implemented ✓
-
 ### P1 (High Priority)
-- Admin dashboard to view/manage applications
-- Email notifications on submission
-- Application status tracking
+- Real email notifications (SendGrid/Resend integration)
+- Application document upload
+- PDF application summary export
 
 ### P2 (Nice to Have)
-- PDF application summary download
-- Save progress & resume later
 - Loan calculator tool
-- Document upload capability
+- Multiple admin users with roles
+- Application notes/comments for admins
+- Analytics & reporting dashboard
 
 ## Next Tasks
-1. Add admin authentication & dashboard
-2. Implement email notifications (SendGrid/Resend)
-3. Add application status workflow (pending → under review → approved/rejected)
+1. Integrate real email provider if needed
+2. Add document upload capability
+3. Build loan calculator widget
