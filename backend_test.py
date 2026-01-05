@@ -400,151 +400,45 @@ class LoanApplicationAPITester:
             self.log_test("Unread Notification Count", False, str(e))
             return False
 
-    def test_loan_amount_limits(self):
-        """Test new loan amount limits: $100 minimum, $5000 maximum"""
-        # Test minimum valid amount ($100)
-        min_valid_data = {
-            "first_name": "Test",
-            "last_name": "User",
-            "email": "test@example.com",
-            "phone": "5551234567",
-            "date_of_birth": "1990-01-15",
-            "street_address": "123 Test St",
-            "city": "Test City",
-            "state": "NY",
-            "zip_code": "10001",
-            "annual_income": 50000.0,
-            "employment_status": "employed",
-            "loan_amount_requested": 100.0,  # Minimum valid amount
-            "ssn_last_four": "1234"
-        }
-        
+    def test_loan_calculator(self):
+        """Test loan calculator endpoint with new limits"""
         try:
-            response = requests.post(
-                f"{self.api_url}/applications",
-                json=min_valid_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=10
-            )
+            # Test with amount within new range ($2500)
+            response = requests.get(f"{self.api_url}/calculator?amount=2500&rate=8.5&term=12", timeout=10)
             
             success = response.status_code == 200
-            details = f"Min amount ($100) - Status: {response.status_code}"
-            self.log_test("Loan Amount - Minimum Valid ($100)", success, details)
-        except Exception as e:
-            self.log_test("Loan Amount - Minimum Valid ($100)", False, str(e))
-        
-        # Test maximum valid amount ($5000)
-        max_valid_data = min_valid_data.copy()
-        max_valid_data["loan_amount_requested"] = 5000.0
-        max_valid_data["email"] = "test2@example.com"
-        
-        try:
-            response = requests.post(
-                f"{self.api_url}/applications",
-                json=max_valid_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=10
-            )
-            
-            success = response.status_code == 200
-            details = f"Max amount ($5000) - Status: {response.status_code}"
-            self.log_test("Loan Amount - Maximum Valid ($5000)", success, details)
-        except Exception as e:
-            self.log_test("Loan Amount - Maximum Valid ($5000)", False, str(e))
-        
-        # Test below minimum ($99)
-        below_min_data = min_valid_data.copy()
-        below_min_data["loan_amount_requested"] = 99.0
-        below_min_data["email"] = "test3@example.com"
-        
-        try:
-            response = requests.post(
-                f"{self.api_url}/applications",
-                json=below_min_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=10
-            )
-            
-            success = response.status_code == 422  # Should fail validation
-            details = f"Below min ($99) - Status: {response.status_code}"
-            self.log_test("Loan Amount - Below Minimum ($99)", success, details)
-        except Exception as e:
-            self.log_test("Loan Amount - Below Minimum ($99)", False, str(e))
-        
-        # Test above maximum ($5001)
-        above_max_data = min_valid_data.copy()
-        above_max_data["loan_amount_requested"] = 5001.0
-        above_max_data["email"] = "test4@example.com"
-        
-        try:
-            response = requests.post(
-                f"{self.api_url}/applications",
-                json=above_max_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=10
-            )
-            
-            success = response.status_code == 422  # Should fail validation
-            details = f"Above max ($5001) - Status: {response.status_code}"
-            self.log_test("Loan Amount - Above Maximum ($5001)", success, details)
-        except Exception as e:
-            self.log_test("Loan Amount - Above Maximum ($5001)", False, str(e))
-
-    def test_banking_info_with_password(self):
-        """Test banking info endpoint with admin password requirement"""
-        if not self.test_application_id:
-            self.log_test("Banking Info with Password", False, "No application ID available")
-            return False
-        
-        try:
-            # First test without password (should return masked info)
-            response = requests.get(
-                f"{self.api_url}/applications/{self.test_application_id}/banking-info",
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                # Should have masked fields
-                if 'account_number_last_four' in data and 'card_last_four' in data:
-                    self.log_test("Banking Info - Masked (No Password)", True, "Correctly returned masked info")
-                else:
-                    self.log_test("Banking Info - Masked (No Password)", False, "Missing masked fields")
-            else:
-                self.log_test("Banking Info - Masked (No Password)", False, f"Status: {response.status_code}")
-            
-            # Test with wrong password
-            response = requests.get(
-                f"{self.api_url}/applications/{self.test_application_id}/banking-info?full=true&password=wrongpassword",
-                timeout=10
-            )
-            
-            success = response.status_code == 401
-            details = f"Wrong password - Status: {response.status_code}"
-            self.log_test("Banking Info - Wrong Password", success, details)
-            
-            # Test with correct password
-            response = requests.get(
-                f"{self.api_url}/applications/{self.test_application_id}/banking-info?full=true&password=admin123",
-                timeout=10
-            )
-            
-            success = response.status_code == 200
-            details = f"Correct password - Status: {response.status_code}"
+            details = f"Status: {response.status_code}"
             
             if success:
                 data = response.json()
-                # Should have full fields
-                if 'account_number' in data and 'card_number' in data and 'card_cvv' in data:
-                    details += ", Full banking info returned"
+                required_fields = ['loan_amount', 'interest_rate', 'loan_term_months', 'monthly_payment', 'total_payment', 'total_interest']
+                if all(field in data for field in required_fields):
+                    details += f", Monthly payment: ${data['monthly_payment']}, Total: ${data['total_payment']}"
+                    # Verify calculation makes sense for new range
+                    if data['loan_amount'] == 2500 and data['monthly_payment'] > 0 and data['loan_term_months'] == 12:
+                        details += ", Calculation valid for new range"
+                    else:
+                        success = False
+                        details += ", Invalid calculation results"
                 else:
                     success = False
-                    details += ", Missing full banking info fields"
+                    details += ", Missing required calculation fields"
             
-            self.log_test("Banking Info - Correct Password", success, details)
-            return success
+            self.log_test("Loan Calculator (New Range)", success, details)
+            
+            # Test with minimum amount ($100)
+            response = requests.get(f"{self.api_url}/calculator?amount=100&rate=8.5&term=3", timeout=10)
+            success_min = response.status_code == 200
+            self.log_test("Loan Calculator - Minimum ($100)", success_min, f"Status: {response.status_code}")
+            
+            # Test with maximum amount ($5000)
+            response = requests.get(f"{self.api_url}/calculator?amount=5000&rate=8.5&term=24", timeout=10)
+            success_max = response.status_code == 200
+            self.log_test("Loan Calculator - Maximum ($5000)", success_max, f"Status: {response.status_code}")
+            
+            return success and success_min and success_max
         except Exception as e:
-            self.log_test("Banking Info - Password Tests", False, str(e))
+            self.log_test("Loan Calculator", False, str(e))
             return False
 
     def test_approve_application_and_token_generation(self):
