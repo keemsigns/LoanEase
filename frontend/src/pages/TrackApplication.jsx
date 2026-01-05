@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,10 @@ import {
   ChevronLeft,
   FileText,
   Loader2,
+  Upload,
+  AlertCircle,
+  File,
+  X,
 } from "lucide-react";
 import axios from "axios";
 
@@ -26,6 +30,7 @@ const API = `${BACKEND_URL}/api`;
 const STATUS_CONFIG = {
   pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Clock },
   under_review: { label: "Under Review", color: "bg-blue-100 text-blue-800 border-blue-200", icon: Eye },
+  documents_required: { label: "Documents Required", color: "bg-orange-100 text-orange-800 border-orange-200", icon: FileText },
   approved: { label: "Approved", color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2 },
   rejected: { label: "Rejected", color: "bg-red-100 text-red-800 border-red-200", icon: XCircle },
 };
@@ -36,6 +41,10 @@ const TrackApplication = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [applicationNeedingDocs, setApplicationNeedingDocs] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const fileInputRef = useRef(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -46,10 +55,23 @@ const TrackApplication = () => {
 
     setIsLoading(true);
     setHasSearched(true);
+    setApplicationNeedingDocs(null);
 
     try {
       const response = await axios.get(`${API}/notifications/applicant/${encodeURIComponent(email)}`);
       setNotifications(response.data);
+      
+      // Check if there's an application needing documents
+      const appsResponse = await axios.get(`${API}/applications`);
+      const apps = appsResponse.data.filter(app => 
+        app.email.toLowerCase() === email.toLowerCase() && 
+        app.status === "documents_required"
+      );
+      
+      if (apps.length > 0) {
+        setApplicationNeedingDocs(apps[0]);
+      }
+      
       if (response.data.length === 0) {
         toast.info("No applications found for this email");
       }
@@ -59,6 +81,60 @@ const TrackApplication = () => {
       setNotifications([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => {
+      const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      
+      if (!validTypes.includes(file.type)) {
+        toast.error(`${file.name}: Only PDF, JPG, and PNG files are allowed`);
+        return false;
+      }
+      if (file.size > maxSize) {
+        toast.error(`${file.name}: File size must be less than 10MB`);
+        return false;
+      }
+      return true;
+    });
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpload = async () => {
+    if (!applicationNeedingDocs || selectedFiles.length === 0) return;
+    
+    setUploadingFile(true);
+    
+    try {
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        await axios.post(
+          `${API}/applications/${applicationNeedingDocs.id}/upload-document?token=${applicationNeedingDocs.document_upload_token}`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+      }
+      
+      toast.success(`${selectedFiles.length} document(s) uploaded successfully!`);
+      setSelectedFiles([]);
+      
+      // Refresh the search
+      handleSearch({ preventDefault: () => {} });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error.response?.data?.detail || "Failed to upload documents");
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -140,6 +216,105 @@ const TrackApplication = () => {
             </div>
           </motion.form>
 
+          {/* Document Upload Section */}
+          <AnimatePresence>
+            {applicationNeedingDocs && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-orange-50 border border-orange-200 rounded-2xl p-6 md:p-8 mb-8"
+              >
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-orange-900 mb-1">
+                      Documents Required
+                    </h3>
+                    <p className="text-orange-700">
+                      {applicationNeedingDocs.document_request_message || "Please upload the requested documents to continue processing your application."}
+                    </p>
+                    <p className="text-sm text-orange-600 mt-2 font-mono">
+                      Application Ref: {applicationNeedingDocs.id.slice(0, 8).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* File Upload Area */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-orange-300 rounded-xl p-8 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-100/50 transition-colors"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    data-testid="document-file-input"
+                    onChange={handleFileSelect}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    multiple
+                    className="hidden"
+                  />
+                  <Upload className="w-10 h-10 text-orange-400 mx-auto mb-3" />
+                  <p className="text-orange-800 font-medium mb-1">
+                    Click to upload documents
+                  </p>
+                  <p className="text-sm text-orange-600">
+                    PDF, JPG, or PNG (max 10MB each)
+                  </p>
+                </div>
+
+                {/* Selected Files */}
+                {selectedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-white rounded-lg p-3 border border-orange-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <File className="w-5 h-5 text-orange-500" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{file.name}</p>
+                            <p className="text-xs text-slate-500">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="p-1 hover:bg-red-50 rounded-full text-red-500"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    <Button
+                      data-testid="upload-documents-btn"
+                      onClick={handleUpload}
+                      disabled={uploadingFile}
+                      className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full h-12"
+                    >
+                      {uploadingFile ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-5 h-5 mr-2" />
+                          Upload {selectedFiles.length} Document{selectedFiles.length > 1 ? "s" : ""}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Results */}
           <AnimatePresence mode="wait">
             {hasSearched && notifications !== null && (
@@ -175,6 +350,7 @@ const TrackApplication = () => {
                       if (notif.subject.toLowerCase().includes("approved")) status = "approved";
                       else if (notif.subject.toLowerCase().includes("rejected") || notif.subject.toLowerCase().includes("declined")) status = "rejected";
                       else if (notif.subject.toLowerCase().includes("under review")) status = "under_review";
+                      else if (notif.subject.toLowerCase().includes("documents required") || notif.subject.toLowerCase().includes("documents")) status = "documents_required";
                       else if (notif.subject.toLowerCase().includes("received")) status = "pending";
 
                       const StatusIcon = STATUS_CONFIG[status]?.icon || Clock;
@@ -194,12 +370,14 @@ const TrackApplication = () => {
                                 status === "approved" ? "bg-green-50" :
                                 status === "rejected" ? "bg-red-50" :
                                 status === "under_review" ? "bg-blue-50" :
+                                status === "documents_required" ? "bg-orange-50" :
                                 "bg-yellow-50"
                               }`}>
                                 <StatusIcon className={`w-5 h-5 ${
                                   status === "approved" ? "text-green-600" :
                                   status === "rejected" ? "text-red-600" :
                                   status === "under_review" ? "text-blue-600" :
+                                  status === "documents_required" ? "text-orange-600" :
                                   "text-yellow-600"
                                 }`} />
                               </div>
