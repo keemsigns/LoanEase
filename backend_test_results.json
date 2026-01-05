@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-01-05T20:40:41.710618",
-  "total_tests": 14,
-  "passed_tests": 14,
+  "timestamp": "2026-01-05T20:54:27.073050",
+  "total_tests": 19,
+  "passed_tests": 19,
   "success_rate": 100.0,
   "test_results": [
     {
@@ -12,7 +12,7 @@
     {
       "test": "Create Loan Application",
       "success": true,
-      "details": "Status: 200, Application ID: 76dd54fb..."
+      "details": "Status: 200, Application ID: e51c3c49..."
     },
     {
       "test": "Get Specific Application",
@@ -22,7 +22,7 @@
     {
       "test": "Get All Applications",
       "success": true,
-      "details": "Status: 200, Found 4 applications"
+      "details": "Status: 200, Found 5 applications"
     },
     {
       "test": "Invalid Application Validation",
@@ -52,17 +52,17 @@
     {
       "test": "Get All Notifications",
       "success": true,
-      "details": "Status: 200, Found 4 notifications"
+      "details": "Status: 200, Found 10 notifications"
     },
     {
       "test": "Get Applicant Notifications",
       "success": true,
-      "details": "Status: 200, Found 2 notifications for john.doe@example.com"
+      "details": "Status: 200, Found 5 notifications for john.doe@example.com"
     },
     {
       "test": "Dashboard Statistics",
       "success": true,
-      "details": "Status: 200, Stats: 4 total, 3 pending"
+      "details": "Status: 200, Stats: 5 total, 3 pending"
     },
     {
       "test": "Mark Notification Read",
@@ -72,7 +72,32 @@
     {
       "test": "Unread Notification Count",
       "success": true,
-      "details": "Status: 200, Unread count: 3"
+      "details": "Status: 200, Unread count: 8"
+    },
+    {
+      "test": "Loan Calculator",
+      "success": true,
+      "details": "Status: 200, Monthly payment: $789.19, Total: $28410.78, Calculation valid"
+    },
+    {
+      "test": "Approve Application & Token Generation",
+      "success": true,
+      "details": "Status: 200, Status approved, Token generated: 9628686f..."
+    },
+    {
+      "test": "Verify Approval Token",
+      "success": true,
+      "details": "Status: 200, Token verified for application e51c3c49..."
+    },
+    {
+      "test": "Accept Loan & Banking Info",
+      "success": true,
+      "details": "Status: 200, Banking info submitted successfully"
+    },
+    {
+      "test": "Banking Info Validation",
+      "success": true,
+      "details": "Status: 422"
     }
   ]
 }
