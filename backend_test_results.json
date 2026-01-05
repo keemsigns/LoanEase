@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-05T21:16:49.411467",
-  "total_tests": 28,
-  "passed_tests": 28,
-  "success_rate": 100.0,
+  "timestamp": "2026-01-05T21:26:30.362008",
+  "total_tests": 37,
+  "passed_tests": 36,
+  "success_rate": 97.2972972972973,
   "test_results": [
     {
       "test": "API Root Endpoint",
@@ -12,7 +12,7 @@
     {
       "test": "Create Loan Application",
       "success": true,
-      "details": "Status: 200, Application ID: 236116b9..."
+      "details": "Status: 200, Application ID: 3db23334..."
     },
     {
       "test": "Get Specific Application",
@@ -22,7 +22,27 @@
     {
       "test": "Get All Applications",
       "success": true,
-      "details": "Status: 200, Found 9 applications"
+      "details": "Status: 200, Found 12 applications"
+    },
+    {
+      "test": "Loan Amount - Minimum Valid ($100)",
+      "success": true,
+      "details": "Min amount ($100) - Status: 200"
+    },
+    {
+      "test": "Loan Amount - Maximum Valid ($5000)",
+      "success": true,
+      "details": "Max amount ($5000) - Status: 200"
+    },
+    {
+      "test": "Loan Amount - Below Minimum ($99)",
+      "success": true,
+      "details": "Below min ($99) - Status: 422"
+    },
+    {
+      "test": "Loan Amount - Above Maximum ($5001)",
+      "success": true,
+      "details": "Above max ($5001) - Status: 422"
     },
     {
       "test": "Invalid Application Validation",
@@ -52,17 +72,17 @@
     {
       "test": "Get All Notifications",
       "success": true,
-      "details": "Status: 200, Found 47 notifications"
+      "details": "Status: 200, Found 66 notifications"
     },
     {
       "test": "Get Applicant Notifications",
       "success": true,
-      "details": "Status: 200, Found 14 notifications for john.doe@example.com"
+      "details": "Status: 200, Found 20 notifications for john.doe@example.com"
     },
     {
       "test": "Dashboard Statistics",
       "success": true,
-      "details": "Status: 200, Stats: 9 total, 3 pending"
+      "details": "Status: 200, Stats: 14 total, 7 pending"
     },
     {
       "test": "Mark Notification Read",
@@ -72,22 +92,32 @@
     {
       "test": "Unread Notification Count",
       "success": true,
-      "details": "Status: 200, Unread count: 43"
+      "details": "Status: 200, Unread count: 61"
     },
     {
-      "test": "Loan Calculator",
+      "test": "Loan Calculator (New Range)",
       "success": true,
-      "details": "Status: 200, Monthly payment: $789.19, Total: $28410.78, Calculation valid"
+      "details": "Status: 200, Monthly payment: $218.05, Total: $2616.59, Calculation valid for new range"
+    },
+    {
+      "test": "Loan Calculator - Minimum ($100)",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Loan Calculator - Maximum ($5000)",
+      "success": true,
+      "details": "Status: 200"
     },
     {
       "test": "Approve Application & Token Generation",
       "success": true,
-      "details": "Status: 200, Status approved, Token generated: bd937572..."
+      "details": "Status: 200, Status approved, Token generated: 9f4c900f..."
     },
     {
       "test": "Verify Approval Token",
       "success": true,
-      "details": "Status: 200, Token verified for application 236116b9..."
+      "details": "Status: 200, Token verified for application 3db23334..."
     },
     {
       "test": "Accept Loan & Banking Info",
@@ -100,14 +130,29 @@
       "details": "Status: 422"
     },
     {
+      "test": "Banking Info - Masked (No Password)",
+      "success": true,
+      "details": "Correctly returned masked info"
+    },
+    {
+      "test": "Banking Info - Wrong Password",
+      "success": true,
+      "details": "Wrong password - Status: 401"
+    },
+    {
+      "test": "Banking Info - Correct Password",
+      "success": true,
+      "details": "Correct password - Status: 200, Full banking info returned"
+    },
+    {
       "test": "Request Documents Status",
       "success": true,
-      "details": "Status: 200, Status updated, Token generated: e87c1737..., Message: Please upload proof of income ..."
+      "details": "Status: 200, Status updated, Token generated: 524dc8e6..., Message: Please upload proof of income ..."
     },
     {
       "test": "Verify Document Upload Token",
       "success": true,
-      "details": "Status: 200, Token verified for application 236116b9..."
+      "details": "Status: 200, Token verified for application 3db23334..."
     },
     {
       "test": "Upload Document",
@@ -136,8 +181,8 @@
     },
     {
       "test": "Get Banking Info (No Submission)",
-      "success": true,
-      "details": "Status: 404, Correctly returned 404 for application without banking info"
+      "success": false,
+      "details": "Failed to create test application"
     },
     {
       "test": "Get Banking Info (Non-existent App)",
