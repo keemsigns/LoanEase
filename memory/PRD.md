@@ -1,66 +1,59 @@
 # Loan Application Website PRD
 
 ## Original Problem Statement
-Build a loan application website where visitors or potential borrowers enter their basic information and zip code to apply for loans.
+Build a loan application website where visitors enter their basic information and zip code to apply for loans.
 
 ## User Personas
-- **Borrowers**: Individuals seeking personal loans who want a quick, simple application process
-- **Site Visitors**: People exploring loan options before committing to apply
-- **Administrators**: Staff members who review and approve/reject loan applications
-
-## Core Requirements
-- Comprehensive loan application form collecting: Name, Email, Phone, DOB, Address, Income, Employment Status, Loan Amount, SSN (last 4)
-- Admin dashboard to manage applications
-- In-app notification system for status updates
-- Application status tracking for borrowers
-
-## Architecture
-- **Frontend**: React with Shadcn UI, Framer Motion
-- **Backend**: FastAPI with MongoDB (Motor async driver)
-- **Database**: MongoDB - `loan_applications`, `notifications` collections
+- **Borrowers**: Individuals seeking personal loans
+- **Administrators**: Staff who review and approve/reject applications
 
 ## What's Been Implemented (Jan 2025)
+
 ### Phase 1 - MVP
 - [x] Landing page with hero, features, CTA
-- [x] Multi-step application form (3 steps)
+- [x] Multi-step application form (Personal → Address → Financial)
 - [x] Form validation with inline errors
 - [x] Success page with reference ID
-- [x] Backend API for applications
 
 ### Phase 2 - Admin & Notifications
 - [x] Admin dashboard with password protection (admin123)
-- [x] Dashboard stats (total, pending, approved, rejected, total amount)
-- [x] Applications table with search & filter
-- [x] Application detail modal with full info
+- [x] Dashboard stats & applications table with search/filter
 - [x] Status management (pending → under_review → approved/rejected)
-- [x] In-app notification system (stored in DB)
-- [x] Notifications to admin on new applications
-- [x] Notifications to applicants on status changes
-- [x] Track Application page for borrowers to check status by email
+- [x] In-app notification system for both admin and applicants
+- [x] Track Application page for borrowers
+
+### Phase 3 - Calculator & Loan Acceptance
+- [x] Loan Calculator on landing page with interactive sliders
+- [x] Calculates monthly payment, total payment, total interest
+- [x] Unique approval link generated when application approved
+- [x] Admin can copy/view approval links for approved applications
+- [x] AcceptLoan page at /accept-loan/:token for borrowers
+- [x] Borrowers agree to terms via checkbox
+- [x] Banking info collection (account#, routing#, card#, CVV, expiration)
+- [x] Success confirmation after banking info submission
+- [x] Admin sees "Banking" badge for completed submissions
 
 ## API Endpoints
 - POST /api/applications - Submit new application
 - GET /api/applications - List all applications
 - GET /api/applications/{id} - Get single application
-- PATCH /api/applications/{id}/status - Update status
+- PATCH /api/applications/{id}/status - Update status (generates token if approved)
+- GET /api/applications/verify/{token} - Verify approval token
+- POST /api/applications/accept-loan - Submit banking info
 - POST /api/admin/login - Admin authentication
 - GET /api/notifications - Get all notifications
 - GET /api/notifications/applicant/{email} - Get applicant notifications
 - GET /api/stats - Dashboard statistics
+- GET /api/calculator - Calculate loan payments
 
 ## Prioritized Backlog
 ### P1 (High Priority)
-- Real email notifications (SendGrid/Resend integration)
-- Application document upload
-- PDF application summary export
+- Real email notifications (SendGrid/Resend)
+- Document upload for supporting docs
+- Disbursement tracking & status
 
 ### P2 (Nice to Have)
-- Loan calculator tool
 - Multiple admin users with roles
-- Application notes/comments for admins
-- Analytics & reporting dashboard
-
-## Next Tasks
-1. Integrate real email provider if needed
-2. Add document upload capability
-3. Build loan calculator widget
+- Application notes/comments
+- Analytics dashboard
+- Loan repayment tracking
