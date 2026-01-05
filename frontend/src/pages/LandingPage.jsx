@@ -1,10 +1,29 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Zap, Clock, ArrowRight, Banknote, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { ShieldCheck, Zap, Clock, ArrowRight, Banknote, CheckCircle2, Calculator, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [loanAmount, setLoanAmount] = useState(25000);
+  const [loanTerm, setLoanTerm] = useState(36);
+  const interestRate = 8.5;
+
+  // Calculate monthly payment
+  const calculatePayment = () => {
+    const monthlyRate = interestRate / 100 / 12;
+    if (monthlyRate === 0) return loanAmount / loanTerm;
+    const payment = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, loanTerm)) / (Math.pow(1 + monthlyRate, loanTerm) - 1);
+    return payment;
+  };
+
+  const monthlyPayment = calculatePayment();
+  const totalPayment = monthlyPayment * loanTerm;
+  const totalInterest = totalPayment - loanAmount;
 
   const features = [
     {
@@ -187,6 +206,130 @@ const LandingPage = () => {
               </p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Loan Calculator Section */}
+      <section className="px-6 md:px-12 lg:px-24 py-16 md:py-24 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Calculator className="w-4 h-4" />
+              Loan Calculator
+            </div>
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 font-['Manrope']">
+              Estimate your payments
+            </h2>
+            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+              Use our calculator to see your estimated monthly payments before you apply.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="grid lg:grid-cols-2 gap-8 items-start"
+          >
+            {/* Calculator Inputs */}
+            <div className="bg-[#fdfbf7] rounded-2xl p-8 border border-emerald-900/5">
+              <div className="space-y-8">
+                {/* Loan Amount */}
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <Label className="text-sm font-medium text-slate-600">Loan Amount</Label>
+                    <span className="text-2xl font-bold text-emerald-900">${loanAmount.toLocaleString()}</span>
+                  </div>
+                  <Slider
+                    data-testid="loan-amount-slider"
+                    value={[loanAmount]}
+                    onValueChange={(v) => setLoanAmount(v[0])}
+                    min={1000}
+                    max={100000}
+                    step={1000}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between mt-2 text-xs text-slate-400">
+                    <span>$1,000</span>
+                    <span>$100,000</span>
+                  </div>
+                </div>
+
+                {/* Loan Term */}
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <Label className="text-sm font-medium text-slate-600">Loan Term</Label>
+                    <span className="text-2xl font-bold text-emerald-900">{loanTerm} months</span>
+                  </div>
+                  <Slider
+                    data-testid="loan-term-slider"
+                    value={[loanTerm]}
+                    onValueChange={(v) => setLoanTerm(v[0])}
+                    min={12}
+                    max={84}
+                    step={6}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between mt-2 text-xs text-slate-400">
+                    <span>12 months</span>
+                    <span>84 months</span>
+                  </div>
+                </div>
+
+                {/* Interest Rate Display */}
+                <div className="flex justify-between items-center pt-4 border-t border-emerald-900/10">
+                  <span className="text-sm text-slate-600">Interest Rate (APR)</span>
+                  <span className="font-semibold text-slate-900">{interestRate}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="space-y-4">
+              <div className="bg-emerald-900 rounded-2xl p-8 text-white">
+                <p className="text-emerald-200 text-sm mb-2">Estimated Monthly Payment</p>
+                <p data-testid="monthly-payment" className="text-5xl font-bold mb-1">
+                  ${monthlyPayment.toFixed(2)}
+                </p>
+                <p className="text-emerald-300 text-sm">per month for {loanTerm} months</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#fdfbf7] rounded-xl p-5 border border-emerald-900/5">
+                  <p className="text-sm text-slate-500 mb-1">Total Payment</p>
+                  <p data-testid="total-payment" className="text-xl font-bold text-slate-900">
+                    ${totalPayment.toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-[#fdfbf7] rounded-xl p-5 border border-emerald-900/5">
+                  <p className="text-sm text-slate-500 mb-1">Total Interest</p>
+                  <p data-testid="total-interest" className="text-xl font-bold text-slate-900">
+                    ${totalInterest.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                data-testid="calculator-apply-btn"
+                onClick={() => navigate("/apply")}
+                className="w-full h-14 bg-lime-400 hover:bg-lime-300 text-emerald-900 rounded-full text-lg font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Apply for ${loanAmount.toLocaleString()}
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+
+              <p className="text-xs text-slate-400 text-center">
+                *This is an estimate. Actual rates and terms may vary based on your credit profile.
+              </p>
+            </div>
+          </motion.div>
         </div>
       </section>
 
