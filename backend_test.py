@@ -10,6 +10,8 @@ class LoanApplicationAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []
+        self.test_application_id = None
+        self.test_notification_id = None
 
     def log_test(self, name, success, details=""):
         """Log test result"""
