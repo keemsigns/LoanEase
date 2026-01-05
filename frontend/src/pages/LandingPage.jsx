@@ -9,8 +9,8 @@ import { motion } from "framer-motion";
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [loanAmount, setLoanAmount] = useState(25000);
-  const [loanTerm, setLoanTerm] = useState(36);
+  const [loanAmount, setLoanAmount] = useState(2500);
+  const [loanTerm, setLoanTerm] = useState(12);
   const interestRate = 8.5;
 
   // Calculate monthly payment
@@ -251,14 +251,14 @@ const LandingPage = () => {
                     data-testid="loan-amount-slider"
                     value={[loanAmount]}
                     onValueChange={(v) => setLoanAmount(v[0])}
-                    min={1000}
-                    max={100000}
-                    step={1000}
+                    min={100}
+                    max={5000}
+                    step={100}
                     className="w-full"
                   />
                   <div className="flex justify-between mt-2 text-xs text-slate-400">
-                    <span>$1,000</span>
-                    <span>$100,000</span>
+                    <span>$100</span>
+                    <span>$5,000</span>
                   </div>
                 </div>
 
@@ -272,14 +272,14 @@ const LandingPage = () => {
                     data-testid="loan-term-slider"
                     value={[loanTerm]}
                     onValueChange={(v) => setLoanTerm(v[0])}
-                    min={12}
-                    max={84}
-                    step={6}
+                    min={3}
+                    max={24}
+                    step={3}
                     className="w-full"
                   />
                   <div className="flex justify-between mt-2 text-xs text-slate-400">
-                    <span>12 months</span>
-                    <span>84 months</span>
+                    <span>3 months</span>
+                    <span>24 months</span>
                   </div>
                 </div>
 
