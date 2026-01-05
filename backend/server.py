@@ -1,12 +1,14 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import secrets
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Literal
 import uuid
 from datetime import datetime, timezone
 
@@ -24,23 +26,33 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Simple password protection
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
+security = HTTPBasic()
 
-# Loan Application Models
+
+def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    """Verify admin password"""
+    if not secrets.compare_digest(credentials.password, ADMIN_PASSWORD):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return True
+
+
+# Models
 class LoanApplicationCreate(BaseModel):
-    # Personal Info
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str = Field(..., min_length=1, max_length=50)
     email: EmailStr
     phone: str = Field(..., min_length=10, max_length=15)
-    date_of_birth: str  # ISO format date string
-    
-    # Address Info
+    date_of_birth: str
     street_address: str = Field(..., min_length=1, max_length=200)
     city: str = Field(..., min_length=1, max_length=100)
     state: str = Field(..., min_length=2, max_length=2)
     zip_code: str = Field(..., min_length=5, max_length=10)
-    
-    # Financial Info
     annual_income: float = Field(..., gt=0)
     employment_status: str = Field(...)
     loan_amount_requested: float = Field(..., gt=0)
@@ -68,10 +80,65 @@ class LoanApplication(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class StatusUpdate(BaseModel):
+    status: Literal["pending", "under_review", "approved", "rejected"]
+
+
+class Notification(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    recipient_type: Literal["admin", "applicant"]
+    recipient_email: str
+    application_id: str
+    subject: str
+    message: str
+    read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AdminLoginRequest(BaseModel):
+    password: str
+
+
+class AdminLoginResponse(BaseModel):
+    success: bool
+    message: str
+
+
+# Helper function to create notifications
+async def create_notification(
+    recipient_type: str,
+    recipient_email: str,
+    application_id: str,
+    subject: str,
+    message: str
+):
+    notification = Notification(
+        recipient_type=recipient_type,
+        recipient_email=recipient_email,
+        application_id=application_id,
+        subject=subject,
+        message=message
+    )
+    doc = notification.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.notifications.insert_one(doc)
+    return notification
+
+
 # API Routes
 @api_router.get("/")
 async def root():
     return {"message": "Loan Application API"}
+
+
+@api_router.post("/admin/login", response_model=AdminLoginResponse)
+async def admin_login(request: AdminLoginRequest):
+    """Verify admin password"""
+    if secrets.compare_digest(request.password, ADMIN_PASSWORD):
+        return AdminLoginResponse(success=True, message="Login successful")
+    raise HTTPException(status_code=401, detail="Invalid password")
 
 
 @api_router.post("/applications", response_model=LoanApplication)
@@ -81,11 +148,28 @@ async def create_loan_application(application: LoanApplicationCreate):
         app_dict = application.model_dump()
         loan_app = LoanApplication(**app_dict)
         
-        # Convert to dict and serialize datetime for MongoDB
         doc = loan_app.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         
         await db.loan_applications.insert_one(doc)
+        
+        # Create notification for admin
+        await create_notification(
+            recipient_type="admin",
+            recipient_email="admin@loanease.com",
+            application_id=loan_app.id,
+            subject="New Loan Application Received",
+            message=f"A new loan application has been submitted by {loan_app.first_name} {loan_app.last_name} for ${loan_app.loan_amount_requested:,.2f}. Application ID: {loan_app.id[:8].upper()}"
+        )
+        
+        # Create notification for applicant
+        await create_notification(
+            recipient_type="applicant",
+            recipient_email=loan_app.email,
+            application_id=loan_app.id,
+            subject="Application Received - LoanEase",
+            message=f"Dear {loan_app.first_name},\n\nThank you for submitting your loan application. Your application reference is {loan_app.id[:8].upper()}.\n\nWe will review your application and get back to you within 24-48 hours.\n\nBest regards,\nLoanEase Team"
+        )
         
         return loan_app
     except Exception as e:
@@ -120,6 +204,154 @@ async def get_all_applications():
             app['created_at'] = datetime.fromisoformat(app['created_at'])
     
     return applications
+
+
+@api_router.patch("/applications/{application_id}/status", response_model=LoanApplication)
+async def update_application_status(application_id: str, status_update: StatusUpdate):
+    """Update loan application status"""
+    application = await db.loan_applications.find_one({"id": application_id}, {"_id": 0})
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    old_status = application['status']
+    new_status = status_update.status
+    
+    await db.loan_applications.update_one(
+        {"id": application_id},
+        {"$set": {"status": new_status}}
+    )
+    
+    # Create notification for applicant about status change
+    status_messages = {
+        "under_review": f"Dear {application['first_name']},\n\nYour loan application (Ref: {application_id[:8].upper()}) is now under review. Our team is carefully evaluating your application.\n\nWe will notify you once a decision has been made.\n\nBest regards,\nLoanEase Team",
+        "approved": f"Dear {application['first_name']},\n\nCongratulations! Your loan application (Ref: {application_id[:8].upper()}) has been APPROVED!\n\nLoan Amount: ${application['loan_amount_requested']:,.2f}\n\nOur team will contact you shortly with the next steps.\n\nBest regards,\nLoanEase Team",
+        "rejected": f"Dear {application['first_name']},\n\nWe regret to inform you that your loan application (Ref: {application_id[:8].upper()}) has been declined at this time.\n\nIf you have any questions, please don't hesitate to contact us.\n\nBest regards,\nLoanEase Team",
+        "pending": f"Dear {application['first_name']},\n\nYour loan application (Ref: {application_id[:8].upper()}) status has been updated to pending.\n\nBest regards,\nLoanEase Team"
+    }
+    
+    status_subjects = {
+        "under_review": "Application Under Review - LoanEase",
+        "approved": "🎉 Application Approved - LoanEase",
+        "rejected": "Application Update - LoanEase",
+        "pending": "Application Status Update - LoanEase"
+    }
+    
+    if old_status != new_status:
+        await create_notification(
+            recipient_type="applicant",
+            recipient_email=application['email'],
+            application_id=application_id,
+            subject=status_subjects[new_status],
+            message=status_messages[new_status]
+        )
+        
+        # Notify admin of status change
+        await create_notification(
+            recipient_type="admin",
+            recipient_email="admin@loanease.com",
+            application_id=application_id,
+            subject=f"Application Status Changed: {old_status} → {new_status}",
+            message=f"Application {application_id[:8].upper()} for {application['first_name']} {application['last_name']} has been updated from {old_status} to {new_status}."
+        )
+    
+    # Return updated application
+    updated_app = await db.loan_applications.find_one({"id": application_id}, {"_id": 0})
+    if isinstance(updated_app['created_at'], str):
+        updated_app['created_at'] = datetime.fromisoformat(updated_app['created_at'])
+    
+    return updated_app
+
+
+@api_router.get("/notifications", response_model=List[Notification])
+async def get_notifications(recipient_type: Optional[str] = None):
+    """Get all notifications, optionally filtered by recipient type"""
+    query = {}
+    if recipient_type:
+        query["recipient_type"] = recipient_type
+    
+    notifications = await db.notifications.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    for notif in notifications:
+        if isinstance(notif['created_at'], str):
+            notif['created_at'] = datetime.fromisoformat(notif['created_at'])
+    
+    return notifications
+
+
+@api_router.get("/notifications/applicant/{email}", response_model=List[Notification])
+async def get_applicant_notifications(email: str):
+    """Get notifications for a specific applicant by email"""
+    notifications = await db.notifications.find(
+        {"recipient_email": email, "recipient_type": "applicant"},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    for notif in notifications:
+        if isinstance(notif['created_at'], str):
+            notif['created_at'] = datetime.fromisoformat(notif['created_at'])
+    
+    return notifications
+
+
+@api_router.patch("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str):
+    """Mark a notification as read"""
+    result = await db.notifications.update_one(
+        {"id": notification_id},
+        {"$set": {"read": True}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    return {"success": True}
+
+
+@api_router.get("/notifications/unread-count")
+async def get_unread_count(recipient_type: Optional[str] = None):
+    """Get count of unread notifications"""
+    query = {"read": False}
+    if recipient_type:
+        query["recipient_type"] = recipient_type
+    
+    count = await db.notifications.count_documents(query)
+    return {"count": count}
+
+
+@api_router.get("/stats")
+async def get_dashboard_stats():
+    """Get dashboard statistics"""
+    total = await db.loan_applications.count_documents({})
+    pending = await db.loan_applications.count_documents({"status": "pending"})
+    under_review = await db.loan_applications.count_documents({"status": "under_review"})
+    approved = await db.loan_applications.count_documents({"status": "approved"})
+    rejected = await db.loan_applications.count_documents({"status": "rejected"})
+    
+    # Calculate total loan amount
+    pipeline = [
+        {"$group": {"_id": None, "total": {"$sum": "$loan_amount_requested"}}}
+    ]
+    result = await db.loan_applications.aggregate(pipeline).to_list(1)
+    total_amount = result[0]["total"] if result else 0
+    
+    # Approved amount
+    pipeline_approved = [
+        {"$match": {"status": "approved"}},
+        {"$group": {"_id": None, "total": {"$sum": "$loan_amount_requested"}}}
+    ]
+    result_approved = await db.loan_applications.aggregate(pipeline_approved).to_list(1)
+    approved_amount = result_approved[0]["total"] if result_approved else 0
+    
+    return {
+        "total_applications": total,
+        "pending": pending,
+        "under_review": under_review,
+        "approved": approved,
+        "rejected": rejected,
+        "total_requested_amount": total_amount,
+        "approved_amount": approved_amount
+    }
 
 
 # Include the router in the main app
