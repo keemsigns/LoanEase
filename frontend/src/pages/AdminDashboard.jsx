@@ -50,6 +50,7 @@ const API = `${BACKEND_URL}/api`;
 const STATUS_CONFIG = {
   pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Clock },
   under_review: { label: "Under Review", color: "bg-blue-100 text-blue-800 border-blue-200", icon: Eye },
+  documents_required: { label: "Docs Required", color: "bg-orange-100 text-orange-800 border-orange-200", icon: FileText },
   approved: { label: "Approved", color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2 },
   rejected: { label: "Rejected", color: "bg-red-100 text-red-800 border-red-200", icon: XCircle },
 };
@@ -68,6 +69,8 @@ const AdminDashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedApp, setSelectedApp] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [documentRequestMessage, setDocumentRequestMessage] = useState("");
+  const [showDocumentRequest, setShowDocumentRequest] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -122,14 +125,18 @@ const AdminDashboard = () => {
     setPassword("");
   };
 
-  const handleStatusChange = async (applicationId, newStatus) => {
+  const handleStatusChange = async (applicationId, newStatus, message = null) => {
     try {
-      await axios.patch(`${API}/applications/${applicationId}/status`, {
-        status: newStatus,
-      });
+      const payload = { status: newStatus };
+      if (message) {
+        payload.document_request_message = message;
+      }
+      await axios.patch(`${API}/applications/${applicationId}/status`, payload);
       toast.success(`Status updated to ${STATUS_CONFIG[newStatus].label}`);
       fetchData();
       setSelectedApp(null);
+      setShowDocumentRequest(false);
+      setDocumentRequestMessage("");
     } catch (error) {
       toast.error("Failed to update status");
     }
@@ -417,6 +424,7 @@ const AdminDashboard = () => {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="under_review">Under Review</SelectItem>
+                <SelectItem value="documents_required">Docs Required</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
