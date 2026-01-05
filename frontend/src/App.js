@@ -5,6 +5,7 @@ import ApplicationForm from "./pages/ApplicationForm";
 import SuccessPage from "./pages/SuccessPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import TrackApplication from "./pages/TrackApplication";
+import AcceptLoan from "./pages/AcceptLoan";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/track" element={<TrackApplication />} />
+          <Route path="/accept-loan/:token" element={<AcceptLoan />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-center" />
