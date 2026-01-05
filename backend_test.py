@@ -770,6 +770,131 @@ class LoanApplicationAPITester:
             self.log_test("Upload with Invalid Token", False, str(e))
             return False
 
+    def test_get_banking_info(self):
+        """Test getting banking info for application with submitted banking details"""
+        if not self.test_application_id:
+            self.log_test("Get Banking Info", False, "No application ID available")
+            return False
+        
+        try:
+            response = requests.get(
+                f"{self.api_url}/applications/{self.test_application_id}/banking-info",
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                required_fields = ['account_number_last_four', 'routing_number_last_four', 'card_last_four', 'card_expiration']
+                if all(field in data for field in required_fields):
+                    details += f", Banking info retrieved - Account: ••••{data['account_number_last_four']}, Card: ••••{data['card_last_four']}"
+                    # Verify last 4 digits format
+                    if (len(data['account_number_last_four']) == 4 and 
+                        len(data['routing_number_last_four']) == 4 and 
+                        len(data['card_last_four']) == 4):
+                        details += ", Last 4 digits format correct"
+                    else:
+                        success = False
+                        details += ", Invalid last 4 digits format"
+                else:
+                    success = False
+                    details += f", Missing required fields: {[f for f in required_fields if f not in data]}"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Get Banking Info", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Banking Info", False, str(e))
+            return False
+
+    def test_get_banking_info_no_submission(self):
+        """Test getting banking info for application without banking info submitted"""
+        # Create a new application without banking info
+        test_data = {
+            "first_name": "Jane",
+            "last_name": "Smith",
+            "email": "jane.smith@example.com",
+            "phone": "5559876543",
+            "date_of_birth": "1985-05-20",
+            "street_address": "456 Oak Avenue",
+            "city": "Los Angeles",
+            "state": "CA",
+            "zip_code": "90210",
+            "annual_income": 85000.0,
+            "employment_status": "employed",
+            "loan_amount_requested": 30000.0,
+            "ssn_last_four": "5678"
+        }
+        
+        try:
+            # Create application
+            response = requests.post(
+                f"{self.api_url}/applications",
+                json=test_data,
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                self.log_test("Get Banking Info (No Submission)", False, "Failed to create test application")
+                return False
+            
+            app_data = response.json()
+            test_app_id = app_data['id']
+            
+            # Try to get banking info (should fail)
+            response = requests.get(
+                f"{self.api_url}/applications/{test_app_id}/banking-info",
+                timeout=10
+            )
+            
+            # Should return 404 since no banking info submitted
+            success = response.status_code == 404
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                details += ", Correctly returned 404 for application without banking info"
+            else:
+                details += f", Expected 404 for application without banking info"
+            
+            self.log_test("Get Banking Info (No Submission)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Banking Info (No Submission)", False, str(e))
+            return False
+
+    def test_get_banking_info_nonexistent_app(self):
+        """Test getting banking info for non-existent application"""
+        fake_id = "00000000-0000-0000-0000-000000000000"
+        
+        try:
+            response = requests.get(
+                f"{self.api_url}/applications/{fake_id}/banking-info",
+                timeout=10
+            )
+            
+            # Should return 404 for non-existent application
+            success = response.status_code == 404
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                details += ", Correctly returned 404 for non-existent application"
+            else:
+                details += f", Expected 404 for non-existent application"
+            
+            self.log_test("Get Banking Info (Non-existent App)", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Banking Info (Non-existent App)", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("🚀 Starting Backend API Tests...")
