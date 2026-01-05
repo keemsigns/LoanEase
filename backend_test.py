@@ -570,6 +570,206 @@ class LoanApplicationAPITester:
             self.log_test("Banking Info Validation", False, str(e))
             return False
 
+    def test_request_documents_status(self):
+        """Test requesting documents and generating upload token"""
+        if not self.test_application_id:
+            self.log_test("Request Documents Status", False, "No application ID available")
+            return False
+        
+        try:
+            # Update status to documents_required with message
+            response = requests.patch(
+                f"{self.api_url}/applications/{self.test_application_id}/status",
+                json={
+                    "status": "documents_required",
+                    "document_request_message": "Please upload proof of income and ID"
+                },
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if (data.get('status') == 'documents_required' and 
+                    data.get('document_upload_token') and 
+                    data.get('document_request_message')):
+                    self.document_upload_token = data.get('document_upload_token')
+                    details += f", Status updated, Token generated: {self.document_upload_token[:8]}..."
+                    details += f", Message: {data.get('document_request_message')[:30]}..."
+                else:
+                    success = False
+                    details += ", Status not updated or token/message not generated"
+            
+            self.log_test("Request Documents Status", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Request Documents Status", False, str(e))
+            return False
+
+    def test_verify_document_upload_token(self):
+        """Test verifying document upload token"""
+        if not hasattr(self, 'document_upload_token') or not self.document_upload_token:
+            self.log_test("Verify Document Upload Token", False, "No document upload token available")
+            return False
+        
+        try:
+            response = requests.get(f"{self.api_url}/applications/document-upload/{self.document_upload_token}", timeout=10)
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('id') == self.test_application_id and data.get('status') == 'documents_required':
+                    details += f", Token verified for application {data['id'][:8]}..."
+                else:
+                    success = False
+                    details += ", Token verification failed or wrong application"
+            
+            self.log_test("Verify Document Upload Token", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Verify Document Upload Token", False, str(e))
+            return False
+
+    def test_upload_document(self):
+        """Test uploading a document"""
+        if not hasattr(self, 'document_upload_token') or not self.document_upload_token:
+            self.log_test("Upload Document", False, "No document upload token available")
+            return False
+        
+        try:
+            # Create a test PDF file content
+            test_file_content = b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n>>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000074 00000 n \n0000000120 00000 n \ntrailer\n<<\n/Size 4\n/Root 1 0 R\n>>\nstartxref\n179\n%%EOF"
+            
+            files = {
+                'file': ('test_document.pdf', test_file_content, 'application/pdf')
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/applications/{self.test_application_id}/upload-document?token={self.document_upload_token}",
+                files=files,
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                if data.get('success') == True and data.get('document'):
+                    self.uploaded_document_id = data['document']['id']
+                    details += f", Document uploaded: {data['document']['filename']}"
+                else:
+                    success = False
+                    details += ", Upload response invalid"
+            else:
+                try:
+                    error_data = response.json()
+                    details += f", Error: {error_data}"
+                except:
+                    details += f", Response: {response.text[:200]}"
+            
+            self.log_test("Upload Document", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Upload Document", False, str(e))
+            return False
+
+    def test_upload_invalid_document(self):
+        """Test uploading invalid document (wrong file type)"""
+        if not hasattr(self, 'document_upload_token') or not self.document_upload_token:
+            self.log_test("Upload Invalid Document", False, "No document upload token available")
+            return False
+        
+        try:
+            # Create a test text file (invalid type)
+            test_file_content = b"This is a text file, not a valid document type"
+            
+            files = {
+                'file': ('test_document.txt', test_file_content, 'text/plain')
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/applications/{self.test_application_id}/upload-document?token={self.document_upload_token}",
+                files=files,
+                timeout=10
+            )
+            
+            # Should return 400 for invalid file type
+            success = response.status_code == 400
+            details = f"Status: {response.status_code}"
+            
+            if not success:
+                details += f", Expected 400 validation error for invalid file type"
+            
+            self.log_test("Upload Invalid Document", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Upload Invalid Document", False, str(e))
+            return False
+
+    def test_get_uploaded_document(self):
+        """Test downloading uploaded document"""
+        if not hasattr(self, 'uploaded_document_id') or not self.uploaded_document_id:
+            self.log_test("Get Uploaded Document", False, "No uploaded document ID available")
+            return False
+        
+        try:
+            response = requests.get(
+                f"{self.api_url}/applications/{self.test_application_id}/documents/{self.uploaded_document_id}",
+                timeout=10
+            )
+            
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                # Check if it's a file response
+                content_type = response.headers.get('content-type', '')
+                if 'application/pdf' in content_type or 'application/octet-stream' in content_type:
+                    details += f", Document downloaded, Content-Type: {content_type}"
+                else:
+                    success = False
+                    details += f", Invalid content type: {content_type}"
+            
+            self.log_test("Get Uploaded Document", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Get Uploaded Document", False, str(e))
+            return False
+
+    def test_upload_with_invalid_token(self):
+        """Test uploading document with invalid token"""
+        try:
+            test_file_content = b"%PDF-1.4\nTest PDF content"
+            files = {
+                'file': ('test_document.pdf', test_file_content, 'application/pdf')
+            }
+            
+            fake_token = "invalid-token-12345"
+            response = requests.post(
+                f"{self.api_url}/applications/{self.test_application_id}/upload-document?token={fake_token}",
+                files=files,
+                timeout=10
+            )
+            
+            # Should return 404 for invalid token
+            success = response.status_code == 404
+            details = f"Status: {response.status_code}"
+            
+            if not success:
+                details += f", Expected 404 for invalid token"
+            
+            self.log_test("Upload with Invalid Token", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Upload with Invalid Token", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("🚀 Starting Backend API Tests...")
