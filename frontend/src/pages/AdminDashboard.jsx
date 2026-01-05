@@ -41,6 +41,7 @@ import {
   Copy,
   ExternalLink,
   CreditCard,
+  AlertCircle,
 } from "lucide-react";
 import axios from "axios";
 
@@ -891,6 +892,99 @@ const AdminDashboard = () => {
                 <Button
                   variant="outline"
                   onClick={() => setSelectedApp(null)}
+                  className="w-full border-emerald-900/10"
+                >
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Banking Info Modal */}
+      <AnimatePresence>
+        {showBankingInfo && bankingInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-[60]"
+            onClick={() => {
+              setShowBankingInfo(false);
+              setBankingInfo(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 border-b border-emerald-900/5 bg-lime-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-lime-200 rounded-full flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-lime-700" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900 font-['Manrope']">
+                      Banking Information
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Submitted on {bankingInfo.submitted_at ? format(new Date(bankingInfo.submitted_at), "MMM d, yyyy") : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Bank Account</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">Account Number</span>
+                    <span className="font-mono font-semibold text-slate-900" data-testid="account-last-four">
+                      ••••••{bankingInfo.account_number_last_four}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-slate-600">Routing Number</span>
+                    <span className="font-mono font-semibold text-slate-900" data-testid="routing-last-four">
+                      •••••{bankingInfo.routing_number_last_four}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Card Details</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">Card Number</span>
+                    <span className="font-mono font-semibold text-slate-900" data-testid="card-last-four">
+                      •••• •••• •••• {bankingInfo.card_last_four}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-slate-600">Expiration</span>
+                    <span className="font-mono font-semibold text-slate-900" data-testid="card-expiration">
+                      {bankingInfo.card_expiration}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800">
+                    For security, only the last 4 digits of sensitive information are displayed.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-emerald-900/5">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowBankingInfo(false);
+                    setBankingInfo(null);
+                  }}
                   className="w-full border-emerald-900/10"
                 >
                   Close
