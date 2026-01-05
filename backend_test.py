@@ -600,6 +600,14 @@ class LoanApplicationAPITester:
         self.test_mark_notification_read()
         self.test_unread_count()
         
+        # Test new loan calculator and approval features
+        print("\n🧮 Testing Loan Calculator & Approval Features...")
+        self.test_loan_calculator()
+        self.test_approve_application_and_token_generation()
+        self.test_verify_approval_token()
+        self.test_accept_loan_banking_info()
+        self.test_banking_info_validation()
+        
         # Print summary
         print("-" * 50)
         print(f"📊 Backend Tests Summary:")
