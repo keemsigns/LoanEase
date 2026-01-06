@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-05T21:26:30.362008",
-  "total_tests": 37,
-  "passed_tests": 36,
-  "success_rate": 97.2972972972973,
+  "timestamp": "2026-01-06T11:54:37.107205",
+  "total_tests": 36,
+  "passed_tests": 35,
+  "success_rate": 97.22222222222221,
   "test_results": [
     {
       "test": "API Root Endpoint",
@@ -12,7 +12,7 @@
     {
       "test": "Create Loan Application",
       "success": true,
-      "details": "Status: 200, Application ID: 3db23334..."
+      "details": "Status: 200, Application ID: 4d2637a7..."
     },
     {
       "test": "Get Specific Application",
@@ -22,7 +22,7 @@
     {
       "test": "Get All Applications",
       "success": true,
-      "details": "Status: 200, Found 12 applications"
+      "details": "Status: 200, Found 17 applications"
     },
     {
       "test": "Loan Amount - Minimum Valid ($100)",
@@ -55,14 +55,9 @@
       "details": "Status: 404"
     },
     {
-      "test": "Admin Login (Valid Password)",
+      "test": "Admin Login Endpoint Removed",
       "success": true,
-      "details": "Status: 200, Login successful"
-    },
-    {
-      "test": "Admin Login (Invalid Password)",
-      "success": true,
-      "details": "Status: 401"
+      "details": "Status: 404, Admin login endpoint correctly removed"
     },
     {
       "test": "Update Application Status",
@@ -72,17 +67,17 @@
     {
       "test": "Get All Notifications",
       "success": true,
-      "details": "Status: 200, Found 66 notifications"
+      "details": "Status: 200, Found 100 notifications"
     },
     {
       "test": "Get Applicant Notifications",
       "success": true,
-      "details": "Status: 200, Found 20 notifications for john.doe@example.com"
+      "details": "Status: 200, Found 27 notifications for john.doe@example.com"
     },
     {
       "test": "Dashboard Statistics",
       "success": true,
-      "details": "Status: 200, Stats: 14 total, 7 pending"
+      "details": "Status: 200, Stats: 19 total, 7 pending"
     },
     {
       "test": "Mark Notification Read",
@@ -92,7 +87,7 @@
     {
       "test": "Unread Notification Count",
       "success": true,
-      "details": "Status: 200, Unread count: 61"
+      "details": "Status: 200, Unread count: 102"
     },
     {
       "test": "Loan Calculator (New Range)",
@@ -112,12 +107,12 @@
     {
       "test": "Approve Application & Token Generation",
       "success": true,
-      "details": "Status: 200, Status approved, Token generated: 9f4c900f..."
+      "details": "Status: 200, Status approved, Token generated: 7aaa0af3..."
     },
     {
       "test": "Verify Approval Token",
       "success": true,
-      "details": "Status: 200, Token verified for application 3db23334..."
+      "details": "Status: 200, Token verified for application 4d2637a7..."
     },
     {
       "test": "Accept Loan & Banking Info",
@@ -130,29 +125,29 @@
       "details": "Status: 422"
     },
     {
-      "test": "Banking Info - Masked (No Password)",
+      "test": "Banking Info - Old Password Rejected",
       "success": true,
-      "details": "Correctly returned masked info"
+      "details": "Old password (admin123) - Status: 401, Correctly rejected old password"
     },
     {
       "test": "Banking Info - Wrong Password",
       "success": true,
-      "details": "Wrong password - Status: 401"
+      "details": "Wrong password - Status: 401, Correctly rejected wrong password"
     },
     {
-      "test": "Banking Info - Correct Password",
+      "test": "Banking Info - New Password Correct",
       "success": true,
-      "details": "Correct password - Status: 200, Full banking info returned"
+      "details": "New password (Ony3gbem!) - Status: 200, Full banking info returned with new password"
     },
     {
       "test": "Request Documents Status",
       "success": true,
-      "details": "Status: 200, Status updated, Token generated: 524dc8e6..., Message: Please upload proof of income ..."
+      "details": "Status: 200, Status updated, Token generated: fa25f54c..., Message: Please upload proof of income ..."
     },
     {
       "test": "Verify Document Upload Token",
       "success": true,
-      "details": "Status: 200, Token verified for application 3db23334..."
+      "details": "Status: 200, Token verified for application 4d2637a7..."
     },
     {
       "test": "Upload Document",
