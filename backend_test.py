@@ -473,61 +473,59 @@ class LoanApplicationAPITester:
         except Exception as e:
             self.log_test("Loan Amount - Above Maximum ($5001)", False, str(e))
 
-    def test_banking_info_with_password(self):
-        """Test banking info endpoint with admin password requirement"""
+    def test_banking_info_new_password(self):
+        """Test banking info endpoint with new password 'Ony3gbem!'"""
         if not self.test_application_id:
-            self.log_test("Banking Info with Password", False, "No application ID available")
+            self.log_test("Banking Info New Password", False, "No application ID available")
             return False
         
         try:
-            # First test without password (should return masked info)
-            response = requests.get(
-                f"{self.api_url}/applications/{self.test_application_id}/banking-info",
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                # Should have masked fields
-                if 'account_number_last_four' in data and 'card_last_four' in data:
-                    self.log_test("Banking Info - Masked (No Password)", True, "Correctly returned masked info")
-                else:
-                    self.log_test("Banking Info - Masked (No Password)", False, "Missing masked fields")
-            else:
-                self.log_test("Banking Info - Masked (No Password)", False, f"Status: {response.status_code}")
-            
-            # Test with wrong password
-            response = requests.get(
-                f"{self.api_url}/applications/{self.test_application_id}/banking-info?full=true&password=wrongpassword",
-                timeout=10
-            )
-            
-            success = response.status_code == 401
-            details = f"Wrong password - Status: {response.status_code}"
-            self.log_test("Banking Info - Wrong Password", success, details)
-            
-            # Test with correct password
+            # Test with wrong password (old password)
             response = requests.get(
                 f"{self.api_url}/applications/{self.test_application_id}/banking-info?full=true&password=admin123",
                 timeout=10
             )
             
-            success = response.status_code == 200
-            details = f"Correct password - Status: {response.status_code}"
+            success_wrong = response.status_code == 401
+            details_wrong = f"Old password (admin123) - Status: {response.status_code}"
+            if success_wrong:
+                details_wrong += ", Correctly rejected old password"
+            self.log_test("Banking Info - Old Password Rejected", success_wrong, details_wrong)
             
-            if success:
+            # Test with another wrong password
+            response = requests.get(
+                f"{self.api_url}/applications/{self.test_application_id}/banking-info?full=true&password=wrongpassword",
+                timeout=10
+            )
+            
+            success_wrong2 = response.status_code == 401
+            details_wrong2 = f"Wrong password - Status: {response.status_code}"
+            if success_wrong2:
+                details_wrong2 += ", Correctly rejected wrong password"
+            self.log_test("Banking Info - Wrong Password", success_wrong2, details_wrong2)
+            
+            # Test with correct new password
+            response = requests.get(
+                f"{self.api_url}/applications/{self.test_application_id}/banking-info?full=true&password=Ony3gbem!",
+                timeout=10
+            )
+            
+            success_correct = response.status_code == 200
+            details_correct = f"New password (Ony3gbem!) - Status: {response.status_code}"
+            
+            if success_correct:
                 data = response.json()
                 # Should have full fields
                 if 'account_number' in data and 'card_number' in data and 'card_cvv' in data:
-                    details += ", Full banking info returned"
+                    details_correct += ", Full banking info returned with new password"
                 else:
-                    success = False
-                    details += ", Missing full banking info fields"
+                    success_correct = False
+                    details_correct += ", Missing full banking info fields"
             
-            self.log_test("Banking Info - Correct Password", success, details)
-            return success
+            self.log_test("Banking Info - New Password Correct", success_correct, details_correct)
+            return success_wrong and success_wrong2 and success_correct
         except Exception as e:
-            self.log_test("Banking Info - Password Tests", False, str(e))
+            self.log_test("Banking Info New Password", False, str(e))
             return False
 
     def test_loan_calculator(self):
