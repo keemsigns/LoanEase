@@ -205,9 +205,8 @@ class LoanApplicationAPITester:
             self.log_test("Non-existent Application", False, str(e))
             return False
 
-    def test_admin_login(self):
-        """Test admin login endpoint"""
-        # Test valid password
+    def test_admin_login_removed(self):
+        """Test that admin login endpoint has been removed"""
         try:
             response = requests.post(
                 f"{self.api_url}/admin/login",
@@ -216,36 +215,20 @@ class LoanApplicationAPITester:
                 timeout=10
             )
             
-            success = response.status_code == 200
+            # Should return 404 since endpoint is removed
+            success = response.status_code == 404
             details = f"Status: {response.status_code}"
             
             if success:
-                data = response.json()
-                if data.get('success') == True:
-                    details += f", Login successful"
-                else:
-                    success = False
-                    details += ", Login response invalid"
+                details += ", Admin login endpoint correctly removed"
+            else:
+                details += f", Expected 404 - admin login should be removed"
             
-            self.log_test("Admin Login (Valid Password)", success, details)
+            self.log_test("Admin Login Endpoint Removed", success, details)
+            return success
         except Exception as e:
-            self.log_test("Admin Login (Valid Password)", False, str(e))
-        
-        # Test invalid password
-        try:
-            response = requests.post(
-                f"{self.api_url}/admin/login",
-                json={"password": "wrongpassword"},
-                headers={'Content-Type': 'application/json'},
-                timeout=10
-            )
-            
-            success = response.status_code == 401
-            details = f"Status: {response.status_code}"
-            
-            self.log_test("Admin Login (Invalid Password)", success, details)
-        except Exception as e:
-            self.log_test("Admin Login (Invalid Password)", False, str(e))
+            self.log_test("Admin Login Endpoint Removed", False, str(e))
+            return False
 
     def test_update_application_status(self):
         """Test updating application status"""
