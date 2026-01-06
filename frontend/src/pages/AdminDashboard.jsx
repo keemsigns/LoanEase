@@ -186,67 +186,6 @@ const AdminDashboard = () => {
     currentPage * itemsPerPage
   );
 
-  // Login Screen
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#fdfbf7] flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md"
-        >
-          <div className="bg-white rounded-2xl border border-emerald-900/5 p-8 shadow-sm">
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <Banknote className="w-8 h-8 text-emerald-900" />
-              <span className="text-xl font-bold text-emerald-900 font-['Manrope']">
-                LoanEase Admin
-              </span>
-            </div>
-
-            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Lock className="w-8 h-8 text-emerald-900" />
-            </div>
-
-            <h1 className="text-2xl font-semibold text-center text-slate-900 font-['Manrope'] mb-2">
-              Admin Access
-            </h1>
-            <p className="text-center text-slate-500 mb-8">
-              Enter admin password to continue
-            </p>
-
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div>
-                <Input
-                  type="password"
-                  data-testid="admin-password-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="h-14 bg-white border-emerald-900/10 focus:border-emerald-900 focus:ring-1 focus:ring-emerald-900 rounded-lg text-base text-center"
-                />
-              </div>
-              <Button
-                type="submit"
-                data-testid="admin-login-btn"
-                disabled={isLoading || !password}
-                className="w-full h-14 bg-emerald-900 hover:bg-emerald-800 text-white rounded-full text-lg font-medium transition-all"
-              >
-                {isLoading ? "Verifying..." : "Access Dashboard"}
-              </Button>
-            </form>
-
-            <button
-              onClick={() => navigate("/")}
-              className="mt-6 text-sm text-slate-500 hover:text-emerald-900 transition-colors w-full text-center"
-            >
-              ← Back to Home
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   // Dashboard
   return (
     <div className="min-h-screen bg-[#fdfbf7]">
