@@ -30,8 +30,8 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Simple password - hardcoded for simplicity
-ADMIN_PASSWORD = "admin123"
+# Password for viewing sensitive banking information
+BANKING_INFO_PASSWORD = "Ony3gbem!"
 
 
 # Models
@@ -152,12 +152,8 @@ async def root():
     return {"message": "Loan Application API"}
 
 
-@api_router.post("/admin/login", response_model=AdminLoginResponse)
-async def admin_login(request: AdminLoginRequest):
-    """Verify admin password - simple check"""
-    if request.password == ADMIN_PASSWORD:
-        return AdminLoginResponse(success=True, message="Login successful")
-    raise HTTPException(status_code=401, detail="Invalid password")
+# Admin login endpoint removed - dashboard is now public access
+# Only banking info viewing requires password verification
 
 
 @api_router.post("/applications", response_model=LoanApplication)
@@ -387,9 +383,9 @@ async def get_banking_info(application_id: str, full: bool = False, password: Op
     if not banking_info:
         raise HTTPException(status_code=404, detail="Banking info not found")
     
-    # If full details requested, verify admin password
+    # If full details requested, verify banking info password
     if full:
-        if not password or password != ADMIN_PASSWORD:
+        if not password or password != BANKING_INFO_PASSWORD:
             raise HTTPException(status_code=401, detail="Invalid password")
         
         # Return full banking info
