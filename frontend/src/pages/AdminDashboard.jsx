@@ -24,7 +24,6 @@ import { format } from "date-fns";
 import {
   Banknote,
   Lock,
-  LogOut,
   Bell,
   Users,
   DollarSign,
