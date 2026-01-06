@@ -1060,7 +1060,7 @@ class LoanApplicationAPITester:
         
         # Test new admin and notification features
         print("\n🔐 Testing Admin & Notification Features...")
-        self.test_admin_login()
+        self.test_admin_login_removed()
         self.test_update_application_status()
         self.test_get_notifications()
         self.test_get_applicant_notifications()
@@ -1076,9 +1076,9 @@ class LoanApplicationAPITester:
         self.test_accept_loan_banking_info()
         self.test_banking_info_validation()
         
-        # Test NEW admin password for banking info
-        print("\n🔒 Testing Admin Password for Banking Info...")
-        self.test_banking_info_with_password()
+        # Test NEW banking info password (Ony3gbem!)
+        print("\n🔒 Testing NEW Banking Info Password (Ony3gbem!)...")
+        self.test_banking_info_new_password()
         
         # Test new document upload features
         print("\n📄 Testing Document Upload Features...")
