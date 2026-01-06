@@ -154,8 +154,8 @@ async def root():
 
 @api_router.post("/admin/login", response_model=AdminLoginResponse)
 async def admin_login(request: AdminLoginRequest):
-    """Verify admin password"""
-    if secrets.compare_digest(request.password, ADMIN_PASSWORD):
+    """Verify admin password - simple check"""
+    if request.password == ADMIN_PASSWORD:
         return AdminLoginResponse(success=True, message="Login successful")
     raise HTTPException(status_code=401, detail="Invalid password")
 
