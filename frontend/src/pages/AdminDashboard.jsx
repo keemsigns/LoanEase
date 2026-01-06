@@ -58,9 +58,6 @@ const STATUS_CONFIG = {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [applications, setApplications] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState(null);
@@ -82,17 +79,8 @@ const AdminDashboard = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("adminAuth");
-    if (stored === "true") {
-      setIsAuthenticated(true);
-    }
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchData();
-    }
-  }, [isAuthenticated]);
 
   const fetchData = async () => {
     try {
