@@ -1,12 +1,10 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import secrets
 import aiofiles
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
@@ -32,20 +30,8 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Simple password protection
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
-security = HTTPBasic()
-
-
-def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    """Verify admin password"""
-    if not secrets.compare_digest(credentials.password, ADMIN_PASSWORD):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return True
+# Simple password - hardcoded for simplicity
+ADMIN_PASSWORD = "admin123"
 
 
 # Models
