@@ -269,12 +269,10 @@ const AdminDashboard = () => {
 
             <Button
               variant="ghost"
-              data-testid="logout-btn"
-              onClick={handleLogout}
-              className="gap-2 text-slate-600 hover:text-red-600"
+              onClick={() => navigate("/")}
+              className="gap-2 text-slate-600 hover:text-emerald-900"
             >
-              <LogOut className="w-4 h-4" />
-              Logout
+              ← Home
             </Button>
           </div>
         </div>
