@@ -100,27 +100,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      await axios.post(`${API}/admin/login`, { password });
-      setIsAuthenticated(true);
-      sessionStorage.setItem("adminAuth", "true");
-      toast.success("Login successful");
-    } catch (error) {
-      toast.error("Invalid password");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem("adminAuth");
-    setPassword("");
-  };
-
   const handleStatusChange = async (applicationId, newStatus, message = null) => {
     try {
       const payload = { status: newStatus };
