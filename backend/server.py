@@ -389,7 +389,7 @@ async def get_banking_info(application_id: str, full: bool = False, password: Op
     
     # If full details requested, verify admin password
     if full:
-        if not password or not secrets.compare_digest(password, ADMIN_PASSWORD):
+        if not password or password != ADMIN_PASSWORD:
             raise HTTPException(status_code=401, detail="Invalid password")
         
         # Return full banking info
