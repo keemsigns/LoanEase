@@ -968,7 +968,7 @@ class LoanApplicationAPITester:
             "zip_code": "90210",
             "annual_income": 85000.0,
             "employment_status": "employed",
-            "loan_amount_requested": 30000.0,
+            "loan_amount_requested": 3000.0,  # Within new $100-$5000 range
             "ssn_last_four": "5678"
         }
         
